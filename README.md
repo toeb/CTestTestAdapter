@@ -27,7 +27,7 @@ See simple example in SampleProject CMake/CTest/C++ Project
 
 ## Screenshot
 
-![screenshot][https://github.com/toeb/CTestTestAdapter/screenshot.png]
+![screenshot][https://github.com/toeb/CTestTestAdapter/blob/master/screenshot.png]
 
 
 
