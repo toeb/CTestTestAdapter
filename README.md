@@ -1,6 +1,10 @@
 # CTestTestAdapter
 
-A Test Adapter to run kitware's CTest from the Visual Studio (2013) TestExplorer
+A Test Adapter to run [kitware's CMake/CTest](http://cmake.org/) from the Visual Studio (2013) TestExplorer
+
+## Screenshot
+
+![screenshot](https://github.com/toeb/CTestTestAdapter/blob/master/screenshot.png)
 
 ## Features
 
@@ -23,6 +27,8 @@ I hope others might want to help developing it as I can't promise to work on it
 
 ## Example
 
-See example CMake/CTest/C++ Project
+See simple example in SampleProject CMake/CTest/C++ Project
+
+
 
 
