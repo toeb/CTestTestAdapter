@@ -25,6 +25,12 @@ I hope others might want to help developing it as I can't promise to work on it
 * More efficient Test Runs
 
 
+## Issues
+
+if you are missing dependencies:  
+* Install the Visual Studio SDK and the 
+* other Dependencies can be found in `C:\Program Files (x86)\Microsoft Visual Studio 12.0\Common7\IDE\CommonExtensions\Microsoft\TestWindow\`
+
 ## Example
 
 See simple example in SampleProject CMake/CTest/C++ Project
