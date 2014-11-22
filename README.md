@@ -36,5 +36,5 @@ if you are missing dependencies:
 See simple example in SampleProject CMake/CTest/C++ Project
 
 
-
+*note*:  The CMake logo belongs to kitware and is under the Creative Commons license.
 
