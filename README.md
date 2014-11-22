@@ -2,6 +2,10 @@
 
 A Test Adapter to run [kitware's CMake/CTest](http://cmake.org/) from the Visual Studio (2013) TestExplorer
 
+## Screenshot
+
+![screenshot](https://github.com/toeb/CTestTestAdapter/blob/master/screenshot.png)
+
 ## Features
 
 * Discovers all tests which are visable in your CMakeLists.txt by running `ctest -N` in your binary_dir
@@ -24,10 +28,6 @@ I hope others might want to help developing it as I can't promise to work on it
 ## Example
 
 See simple example in SampleProject CMake/CTest/C++ Project
-
-## Screenshot
-
-![screenshot](https://github.com/toeb/CTestTestAdapter/blob/master/screenshot.png)
 
 
 
