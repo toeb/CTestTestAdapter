@@ -30,5 +30,5 @@ I hope others might want to help developing it as I can't promise to work on it
 See simple example in SampleProject CMake/CTest/C++ Project
 
 
-
+*note*:  The CMake logo belongs to kitware and is under the Creative Commons license.
 
