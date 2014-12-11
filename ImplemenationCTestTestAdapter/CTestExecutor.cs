@@ -35,11 +35,9 @@ namespace ImplemenationCTestTestAdapter
     /// <param name="frameworkHandle"></param>
     public void RunTests(IEnumerable<string> sources, IRunContext runContext, IFrameworkHandle frameworkHandle)
     {
-      var tcs = sources.Select(src =>
-        CTestCase.Parse(src))
-        .Cast<TestCase>()
-        .Where(it => it != null)
-        .ToList();
+      var tcs = sources.Select(src => (TestCase)CTestCase.Parse(src))
+          .Where(it => it != null)
+          .ToList();
       RunTests(tcs, runContext, frameworkHandle);
     }
 
