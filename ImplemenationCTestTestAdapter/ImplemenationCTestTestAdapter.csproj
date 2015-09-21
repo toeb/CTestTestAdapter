@@ -57,7 +57,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CTestCase.cs" />
     <Compile Include="CTestContainer.cs" />
     <Compile Include="CTestContainerDiscoverer.cs" />
     <Compile Include="CTestDiscoverer.cs" />
