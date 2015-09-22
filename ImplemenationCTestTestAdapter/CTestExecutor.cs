@@ -80,7 +80,7 @@ namespace ImplemenationCTestTestAdapter
 
                 var exitCode = process.ExitCode;
 
-                // TUDO: Regex to get Passed time
+                // TODO: Regex to get the passed time
                 //Test project C:/data/58481/build/working
                 //Start 4: dynamic_libraries_dynamicLibrary_getFunction_not_working
                 //1/1 Test #4: dynamic_libraries_dynamicLibrary_getFunction_not_working ...   Passed    0.07 sec
