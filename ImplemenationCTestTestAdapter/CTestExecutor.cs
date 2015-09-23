@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace ImplemenationCTestTestAdapter
 {
@@ -77,21 +78,16 @@ namespace ImplemenationCTestTestAdapter
 
                 process.Start();
                 var output = process.StandardOutput.ReadToEnd();
-
                 var exitCode = process.ExitCode;
+                var time = Regex.Match(output, @"Passed\s*(?<time>\S*)\s*sec");
 
-                // TODO: Regex to get the passed time
-                //Test project C:/data/58481/build/working
-                //Start 4: dynamic_libraries_dynamicLibrary_getFunction_not_working
-                //1/1 Test #4: dynamic_libraries_dynamicLibrary_getFunction_not_working ...   Passed    0.07 sec
-
-                //100% tests passed, 0 tests failed out of 1
-
-                //Total Test time (real) =   1.13 sec
+                // TODO: In case of a failure, try to parse the fileInfo.DirectoryName/Testing/Temporary
+                // file for failed tests and try to extract the reason for the test failure.
 
                 var testResult = new TestResult(test);
                 testResult.ComputerName = Environment.MachineName;
-                
+                testResult.Duration = TimeSpan.FromSeconds(double.Parse(time.Groups["time"].Value,
+                    System.Globalization.CultureInfo.InvariantCulture.NumberFormat));
                 testResult.Outcome = exitCode == 0 ? TestOutcome.Passed : TestOutcome.Failed;
                 frameworkHandle.RecordResult(testResult);
             }
