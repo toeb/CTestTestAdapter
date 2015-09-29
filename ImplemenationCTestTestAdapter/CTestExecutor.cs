@@ -80,14 +80,23 @@ namespace ImplemenationCTestTestAdapter
                 var output = process.StandardOutput.ReadToEnd();
                 var exitCode = process.ExitCode;
                 var time = Regex.Match(output, @"[d]\s*(?<time>\S*)\s*sec");
-
-                // TODO: In case of a failure, try to parse the fileInfo.DirectoryName/Testing/Temporary
-                // file for failed tests and try to extract the reason for the test failure.
-
+                var message = "";
+                
+                if(exitCode != 0)
+                {
+                    // In case of a failure, try to parse the fileInfo.DirectoryName/Testing/Temporary
+                    // file for failed tests and try to extract the reason for the test failure.
+                    
+                    var content = File.ReadAllText(fileInfo.DirectoryName + "/Testing/Temporary/LastTest.log");
+                    var error = Regex.Match(content, @"Output:\r\n-{58}\r\n(?<output>.*)\r\n<end of output>", RegexOptions.Singleline);
+                    message = error.Groups["output"].Value;
+                }
+                
                 var testResult = new TestResult(test);
                 testResult.ComputerName = Environment.MachineName;
                 testResult.Duration = TimeSpan.FromSeconds(double.Parse(time.Groups["time"].Value,
                     System.Globalization.CultureInfo.InvariantCulture.NumberFormat));
+                testResult.ErrorMessage = message;
                 testResult.Outcome = exitCode == 0 ? TestOutcome.Passed : TestOutcome.Failed;
                 frameworkHandle.RecordResult(testResult);
             }
