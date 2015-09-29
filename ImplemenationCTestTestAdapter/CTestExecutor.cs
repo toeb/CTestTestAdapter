@@ -79,7 +79,7 @@ namespace ImplemenationCTestTestAdapter
                 process.Start();
                 var output = process.StandardOutput.ReadToEnd();
                 var exitCode = process.ExitCode;
-                var time = Regex.Match(output, @"Passed\s*(?<time>\S*)\s*sec");
+                var time = Regex.Match(output, @"[d]\s*(?<time>\S*)\s*sec");
 
                 // TODO: In case of a failure, try to parse the fileInfo.DirectoryName/Testing/Temporary
                 // file for failed tests and try to extract the reason for the test failure.
