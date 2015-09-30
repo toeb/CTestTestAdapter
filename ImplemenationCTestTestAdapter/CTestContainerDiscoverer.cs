@@ -77,6 +77,12 @@ namespace ImplemenationCTestTestAdapter
                 {
                     return Enumerable.Repeat(file.FullName, 1);
                 }
+                else if (subdirs.Count > 0 && content.Contains("add_test"))
+                {
+                    return subdirs
+                        .SelectMany(d => CollectCTestTestfiles(currentDir + "/" + d))
+                        .Concat(Enumerable.Repeat(file.FullName, 1));
+                }
                 else
                 {
                     return subdirs
