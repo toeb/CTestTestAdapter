@@ -17,9 +17,6 @@ namespace ImplemenationCTestTestAdapter
     [FileExtension(".cmake")]
     public class CTestDiscoverer : ITestDiscoverer
     {
-        [Import(typeof(SVsServiceProvider))]
-        IServiceProvider ServiceProvider { get; set; }
-
         public void DiscoverTests(IEnumerable<string> sources, IDiscoveryContext discoveryContext,
             IMessageLogger logger, ITestCaseDiscoverySink discoverySink)
         {

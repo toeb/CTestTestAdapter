@@ -1,6 +1,9 @@
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.Adapter;
 using System;
+using System.Management;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -9,7 +12,6 @@ using System.Text.RegularExpressions;
 
 namespace ImplemenationCTestTestAdapter
 {
-
     /// <summary>
     /// This class executes a ctest TestCase by calling ctest -R for
     /// each test case in the directory of the belonging CTestTestfile.cmake
@@ -18,13 +20,12 @@ namespace ImplemenationCTestTestAdapter
     [ExtensionUri(CTestExecutor.ExecutorUriString)]
     public class CTestExecutor : ITestExecutor
     {
-
+        private bool cancelled;
+         
         /// <summary>
         /// this identifies the testexecuter
         /// </summary>
         public const string ExecutorUriString = "executor://CTestExecutor/v1";
-
-        private bool cancelled;
 
         public void Cancel()
         {
@@ -52,14 +53,13 @@ namespace ImplemenationCTestTestAdapter
         /// </summary>
         public void RunTests(IEnumerable<TestCase> tests, IRunContext runContext, IFrameworkHandle frameworkHandle)
         {
+            var configuration = GetCurrentConfiguration();
+
             foreach (var test in tests)
             {
                 if (cancelled)
                     break;
 
-                // TODO: Need to figure out the currently selected configuration
-                var configuration = "Debug";
-                
                 var testName = test.FullyQualifiedName;
                 var process = new Process();
 
@@ -100,6 +100,13 @@ namespace ImplemenationCTestTestAdapter
                 testResult.Outcome = exitCode == 0 ? TestOutcome.Passed : TestOutcome.Failed;
                 frameworkHandle.RecordResult(testResult);
             }
+        }
+
+        private string GetCurrentConfiguration()
+        {
+            var dte = DTEHelper.GetCurrent();
+            var activeConfiguration = dte.Solution.SolutionBuild.ActiveConfiguration.Name;
+            return activeConfiguration;
         }
 
         public static Uri ExecutorUri = new Uri(ExecutorUriString);
