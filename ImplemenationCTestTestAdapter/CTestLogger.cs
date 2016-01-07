@@ -1,4 +1,4 @@
-﻿#define USE_LOGGING
+﻿//#define USE_LOGGING
 
 
 #if USE_LOGGING
