@@ -1,4 +1,6 @@
 ﻿using EnvDTE80;
+using EnvDTE;
+using Microsoft.VisualStudio.Shell;
 
 namespace ImplemenationCTestTestAdapter
 {
@@ -6,7 +8,9 @@ namespace ImplemenationCTestTestAdapter
     {
         public static string GetCurrentActiveConfiguration()
         {
-            var dte = (DTE2) DTEHelper.GetCurrent();
+            var dte =
+                (DTE2) ServiceProvider.GlobalProvider.GetService(typeof (DTE)) ??
+                (DTE2) DteHelper.GetCurrent();
             if (dte == null)
             {
                 CTestLogger.Instance.LogMessage(

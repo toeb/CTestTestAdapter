@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.IO;
 using System.Xml;
+using System.Text.RegularExpressions;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.Logging;
 
 namespace ImplemenationCTestTestAdapter
@@ -114,7 +115,7 @@ namespace ImplemenationCTestTestAdapter
                         $"CTestWorkingDirectory not found: \"{cTestWorkingDirectory}\"");
                     return;
                 }
-                var args = $"-R \"{test.FullyQualifiedName}\"";
+                var args = $"-R \"^{test.FullyQualifiedName}$\"";
                 args += $" -C \"{cfg}\"";
                 var process = new Process
                 {
@@ -134,10 +135,48 @@ namespace ImplemenationCTestTestAdapter
                     $"running: {cTestExecutable} {args}");
                 process.Start();
                 process.WaitForExit();
-                //var output = process.StandardOutput.ReadToEnd();
+                var output = process.StandardOutput.ReadToEnd();
                 var exitCode = process.ExitCode;
+                var matchString =
+                    $@"Test\s*#[0-9]+:\s+\S*{test.FullyQualifiedName}\S*\s*\.+[\* ]+.+\s+(?<time>\S*)\s+sec";
+                var time = Regex.Matches(output, matchString);
+                var timeCount = time.Count;
+                if (timeCount != 1)
+                {
+                    frameworkHandle.SendMessage(TestMessageLevel.Warning,
+                        $"bad number of result times found:{timeCount}");
+                    frameworkHandle.SendMessage(TestMessageLevel.Warning,
+                        $"output: {output}");
+                    frameworkHandle.SendMessage(TestMessageLevel.Warning,
+                        "-----------------------------");
+                }
+                var message = "";
+
+                if (exitCode != 0)
+                {
+                    // In case of a failure, try to parse the fileInfo.DirectoryName/Testing/Temporary
+                    // file for failed tests and try to extract the reason for the test failure.
+
+                    var logFileName = cTestWorkingDirectory + "/Testing/Temporary/LastTest.log";
+
+                    frameworkHandle.SendMessage(TestMessageLevel.Informational,
+                        $"reading runtimes from \"{logFileName}\"");
+
+                    var content = File.ReadAllText(logFileName);
+                    var error = Regex.Match(content, @"Output:\r\n-{58}\r\n(?<output>.*)\r\n<end of output>",
+                        RegexOptions.Singleline);
+                    message = error.Groups["output"].Value;
+                }
+
+                var computerName = Environment.MachineName;
+                var timeSpan = TimeSpan.FromSeconds(double.Parse(time[0].Groups["time"].Value,
+                    System.Globalization.CultureInfo.InvariantCulture.NumberFormat));
+
                 var testResult = new TestResult(test)
                 {
+                    ComputerName = computerName,
+                    Duration = timeSpan,
+                    ErrorMessage = message,
                     Outcome = exitCode == 0 ? TestOutcome.Passed : TestOutcome.Failed
                 };
                 frameworkHandle.RecordResult(testResult);

@@ -13,9 +13,9 @@ namespace ImplemenationCTestTestAdapter
     ///  must use a static solution instead using crazy interop stuff.
     /// </summary>
     /// <remarks>
-    ///  Taken from here: https://github.com/getgauge/gauge-visualstudio/blob/master/Gauge.VisualStudio/Helpers/DTEHelper.cs
+    ///  Taken from here: https://github.com/getgauge/gauge-visualstudio/blob/master/Gauge.VisualStudio/Helpers/DteHelper.cs
     /// </remarks>
-    internal static class DTEHelper
+    internal static class DteHelper
     {
         [DllImport("ole32.dll")]
         private static extern int CreateBindCtx(uint reserved, out IBindCtx ppbc);
@@ -26,7 +26,7 @@ namespace ImplemenationCTestTestAdapter
             if (!"vstest.executionengine.x86".Equals(testRunnerProcess.ProcessName, StringComparison.OrdinalIgnoreCase))
                 return null;
 
-            string progId = String.Format("!{0}.DTE.{1}:{2}", "VisualStudio", "12.0",
+            var progId = String.Format("!{0}.DTE.{1}:{2}", "VisualStudio", "12.0",
                 GetVisualStudioProcessId(testRunnerProcess.Id));
 
             object runningObject = null;

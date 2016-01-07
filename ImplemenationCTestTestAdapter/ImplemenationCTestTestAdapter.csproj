@@ -75,7 +75,7 @@
     <Compile Include="CTestSolutionEventListener.cs" />
     <Compile Include="CTestTestCollector.cs" />
     <Compile Include="CTestTestFilesWatcher.cs" />
-    <Compile Include="DTEHelper.cs" />
+    <Compile Include="DteHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
