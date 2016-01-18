@@ -181,6 +181,4 @@ UpgradeLog*.htm
 
 # Microsoft Fakes
 FakesAssemblies/
-/SampleProject/build14
-/SampleProject/build12
 /CTestTestAdapter.vsix

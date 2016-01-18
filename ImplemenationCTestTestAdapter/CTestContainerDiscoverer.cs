@@ -1,103 +1,151 @@
 using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.TestWindow.Data;
+using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TestWindow.Extensibility;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
+using ImplemenationCTestTestAdapter.Events;
 
 namespace ImplemenationCTestTestAdapter
 {
-    /// <summary>
-    /// The CTestContainerDiscoverer connects with visual studios TestExplorer window
-    /// it provides the filenames for CTestDiscoverer through the TestContainers enumerable
-    /// </summary>
     [Export(typeof (ITestContainerDiscoverer))]
-    public class CTestContainerDiscoverer : ITestContainerDiscoverer
+    public class CTestContainerDiscoverer : CTestContainerDiscovererBase
     {
-        [Import(typeof (SVsServiceProvider))]
-        public IServiceProvider ServiceProvider { get; set; }
+        public string TestFileExtension => ".cmake";
+        public string TestFileName => "CTestTestfile";
 
-        [Import]
-        public IUnitTestStorage Storage { get; set; }
+        private readonly CTestLogWindow _log;
+        private readonly BuildConfiguration _buildConfiguration;
+        private readonly CMakeCache _cmakeCache;
+        private readonly CTestTestCollector _testCollector;
+        private readonly CTestInfo _testInfo;
 
         [ImportingConstructor]
-        public CTestContainerDiscoverer()
+        public CTestContainerDiscoverer(
+            [Import(typeof (SVsServiceProvider))] IServiceProvider serviceProvider)
+            : base(serviceProvider, new CTestTestfileAddRemoveListener(), CTestExecutor.ExecutorUriString)
         {
-            //CTestLogger.Instance.LogMessage("initializing CTestContainerDiscoverer");
-            _solutionWatcher = new CTestSolutionEventListener();
-            _cmakeCache = new CMakeCache();
-            _ctestFilesWatcher = new CTestTestFilesWatcher();
-            _testContainers = new List<CTestContainer>();
-            _testCollector = new CTestTestCollector();
-
-            _solutionWatcher.AfterSolutionLoaded += OnSolutionOpened;
-            _solutionWatcher.AfterSolutionClosed += OnSolutionClosed;
-            _solutionWatcher.AfterProjectOpened += OnSolutionOpened;
-
-            _cmakeCache.CacheChanged += UpdateTestContainers;
-            _ctestFilesWatcher.CTestFileChanged += UpdateTestContainers;
-
-            //CTestLogger.Instance.LogMessage("initializing CTestContainerDiscoverer done");
-        }
-
-        public Uri ExecutorUri => CTestExecutor.ExecutorUri;
-
-        public IEnumerable<ITestContainer> TestContainers => _testContainers;
-
-        private readonly CTestSolutionEventListener _solutionWatcher;
-        private readonly CMakeCache _cmakeCache;
-        private readonly CTestTestFilesWatcher _ctestFilesWatcher;
-        private readonly List<CTestContainer> _testContainers;
-        private readonly CTestTestCollector _testCollector;
-
-        private void OnSolutionOpened()
-        {
-            //CTestLogger.Instance.LogMessage("CTestContainerDiscoverer:OnSolutionOpened");
-            _cmakeCache.CMakeCacheDir = _solutionWatcher.SolutionDir;
-            _ctestFilesWatcher.CTestBaseDirectory = _solutionWatcher.SolutionDir;
-            if (string.IsNullOrEmpty(_cmakeCache.CTestExecutable))
+            _log = new CTestLogWindow
             {
-                CTestLogger.Instance.LogMessage("no ctest command found in cache, testing not enabled");
-            }
-            UpdateTestContainers();
+                Enabled = false,
+                AutoRaise = false
+            };
+            _buildConfiguration = new BuildConfiguration(serviceProvider);
+            _cmakeCache = new CMakeCache();
+            _testCollector = new CTestTestCollector();
+            _testInfo = new CTestInfo();
+            _cmakeCache.CMakeCacheDir = _buildConfiguration.SolutionDir;
+            _cmakeCache.CacheChanged += OnCMakeCacheChanged;
+            _cmakeCache.StartWatching();
+            _testCollector.CTestWorkingDir = _cmakeCache.CMakeCacheDir;
+            _testCollector.CTestExecutable = _cmakeCache.CTestExecutable;
         }
 
-        private void OnSolutionClosed()
+        private void OnCMakeCacheChanged()
         {
-            //CTestLogger.Instance.LogMessage("CTestContainerDiscoverer:OnSolutionClosed");
-            _cmakeCache.StopWatching();
-            _ctestFilesWatcher.StopWatching();
-        }
-
-        private void UpdateTestContainers()
-        {
-            CTestLogger.Instance.LogMessage("CTestContainerDiscoverer:UpdateTestContainers");
-            _solutionWatcher.UpdateCurrentConfigurationName();
             _testCollector.CTestExecutable = _cmakeCache.CTestExecutable;
             _testCollector.CTestWorkingDir = _cmakeCache.CMakeCacheDir;
-            _testCollector.CurrentActiveConfig = _solutionWatcher.CurrentConfigurationName;
-            _testCollector.CollectTestCases();
-            _testContainers.Clear();
-            var containerFileName =
-                Path.Combine(_solutionWatcher.SolutionDir, "CTestAdapter", "container.ctest");
-            var container = new CTestContainer(this, containerFileName)
-            {
-                CTestList = _testCollector.CTestNames,
-                CTestExecutable = _cmakeCache.CTestExecutable,
-                CTestWorkingDirectory = _cmakeCache.CMakeCacheDir
-            };
-            if (!container.SaveContainer())
-            {
-                CTestLogger.Instance.LogMessage("error writing ctest container to disk: " +
-                                                container.Source);
-                return;
-            }
-            _testContainers.Add(container);
-            TestContainersUpdated?.Invoke(this, null);
-            CTestLogger.Instance.LogMessage("CTestContainerDiscoverer:UpdateTestContainers done");
+            ResetTestContainers();
         }
 
-        public event EventHandler TestContainersUpdated;
+        private void UpdateListOfValidTests()
+        {
+            _testCollector.CurrentActiveConfig = _buildConfiguration.ConfigurationName;
+            _log.OutputLine("CTestContainerDiscoverer.UpdateListOfValidTests");
+            _log.OutputLine($"-- working dir:{_testCollector.CTestWorkingDir}");
+            _log.OutputLine($"-- ctest:      {_testCollector.CTestExecutable}");
+            _log.OutputLine($"-- config:     {_testCollector.CurrentActiveConfig}");
+            _log.OutputLine($"-- args:       {_testCollector.CTestArguments}");
+            _testCollector.CollectTestCases(_testInfo);
+            _log.OutputLine($"=> {_testInfo.Tests.Count}");
+            _testInfo.WriteTestInfoFile(Path.Combine(_buildConfiguration.SolutionDir, CTestInfo.CTestInfoFileName));
+            // TODO only change _validTests if they really changed!!!
+            foreach (var test in _testInfo.Tests)
+            {
+                _log.OutputLine($"valid test: {test.Number} := {test.Name}");
+            }
+        }
+
+#region CTestContainerDiscovererBase
+
+        protected override bool IsTestContainerFile(string file)
+        {
+            try
+            {
+                return TestFileExtension.Equals(
+                    Path.GetExtension(file),
+                    StringComparison.OrdinalIgnoreCase);
+            }
+            catch (Exception /*e*/)
+            {
+                // TODO do some messaging here or so ...
+            }
+            return false;
+        }
+
+        private IEnumerable<string> CollectCTestTestfiles(string currentDir)
+        {
+            _log.OutputLine($"CTestContainerDiscoverer.CollectCTestTestfiles({currentDir})");
+            var file = new FileInfo(Path.Combine(currentDir, TestFileName + TestFileExtension));
+            if (!file.Exists)
+            {
+                _log.OutputLine("CTestContainerDiscoverer.CollectCTestTestfiles(no file)");
+                return Enumerable.Empty<string>();
+            }
+            var content = file.OpenText().ReadToEnd();
+            var matches = Regex.Matches(content, @".*[sS][uB][bB][dD][iI][rR][sS]\s*\((?<subdir>.*)\)");
+            var subdirs = (from Match match in matches select match.Groups["subdir"].Value).ToList();
+            if (content.Contains("add_test"))
+            {
+                _log.OutputLine("CTestContainerDiscoverer.CollectCTestTestfiles: tests found");
+                if (subdirs.Count == 0)
+                {
+                    return Enumerable.Repeat(file.FullName, 1);
+                }
+                if (subdirs.Count > 0)
+                {
+                    _log.OutputLine("CTestContainerDiscoverer.CollectCTestTestfiles: recurse");
+                    return subdirs
+                        .SelectMany(d => CollectCTestTestfiles(Path.Combine(currentDir, d)))
+                        .Concat(Enumerable.Repeat(file.FullName, 1));
+                }
+            }
+            _log.OutputLine("CTestContainerDiscoverer.CollectCTestTestfiles: NO tests found");
+            _log.OutputLine("CTestContainerDiscoverer.CollectCTestTestfiles: recurse");
+            return subdirs
+                .SelectMany(d => CollectCTestTestfiles(Path.Combine(currentDir, d)));
+        }
+
+        protected override IEnumerable<string> FindTestFiles()
+        {
+            _log.OutputLine("CTestContainerDiscoverer.FindTestFiles START");
+            var res = CollectCTestTestfiles(_cmakeCache.CMakeCacheDir);
+            _log.OutputLine("CTestContainerDiscoverer.FindTestFiles END");
+            return res;
+        }
+
+        protected override IEnumerable<string> FindTestFiles(IVsProject project)
+        {
+            // we don't want to react to loading/unloading of projects 
+            // within the solution. Test discovery is only done using
+            // ctest
+            return new List<string>();
+        }
+
+        protected override ITestContainer GetNewTestContainer(string s)
+        {
+            _log.OutputLine($"CTestContainerDiscoverer.GetNewTestContainer: (try) \"{s}\"");
+            return new CTestContainer(this, s);
+        }
+
+        protected override void TestContainersAboutToBeUpdated()
+        {
+            UpdateListOfValidTests();
+        }
+
+#endregion
     }
 }

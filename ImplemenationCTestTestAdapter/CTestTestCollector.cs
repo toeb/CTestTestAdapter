@@ -1,22 +1,17 @@
 ﻿using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
-using TestInfoList = System.Collections.Generic.List<ImplemenationCTestTestAdapter.CTestTestCollector.TestInfo>;
+using System;
 
 namespace ImplemenationCTestTestAdapter
 {
     public class CTestTestCollector
     {
-        public struct TestInfo
-        {
-            public string Name;
-            public int Number;
-        };
+        private const string FieldNameNumber = "number";
+        private const string FieldNameTestname = "testname";
 
-
-        private static readonly Regex TestRegex = new Regex(@".*#(?<number>[1-9][0-9]*): *(?<testname>[\w-\.]+).*");
-
-        public TestInfoList CTestNames { get; } = new TestInfoList();
+        private static readonly Regex TestRegex =
+            new Regex($@".*#(?<{FieldNameNumber}>[1-9][0-9]*): *(?<{FieldNameTestname}>[\w-\.]+).*");
 
         public string CTestExecutable { get; set; }
 
@@ -26,28 +21,23 @@ namespace ImplemenationCTestTestAdapter
 
         public string CTestArguments { get; set; } = " -N ";
 
-        public void CollectTestCases()
+        public void CollectTestCases(CTestInfo info)
         {
-            CTestNames.Clear();
-
+            info.Tests.Clear();
             if (!File.Exists(CTestExecutable))
             {
-                CTestLogger.Instance.LogMessage("CollectTestCases: ctest does not exist: " + CTestExecutable);
                 return;
             }
             if (!Directory.Exists(CTestWorkingDir))
             {
-                CTestLogger.Instance.LogMessage("CollectTestCases: directory does not exist: " + CTestWorkingDir);
                 return;
             }
-
             var args = CTestArguments;
             if (!string.IsNullOrWhiteSpace(CurrentActiveConfig))
             {
                 args += " -C ";
                 args += CurrentActiveConfig;
             }
-
             var proc = new Process
             {
                 StartInfo = new ProcessStartInfo()
@@ -62,14 +52,10 @@ namespace ImplemenationCTestTestAdapter
                     UseShellExecute = false
                 }
             };
-            CTestLogger.Instance.LogMessage("collecting tests:"
-                                            + CTestExecutable + " wd:" + CTestWorkingDir
-                                            + " args: " + args);
             proc.Start();
             var output = proc.StandardOutput.ReadToEnd();
             proc.Dispose();
             var matches = TestRegex.Matches(output);
-
             foreach (var match in matches)
             {
                 var m = match as Match;
@@ -77,14 +63,16 @@ namespace ImplemenationCTestTestAdapter
                 {
                     continue;
                 }
-                var name = m.Groups["testname"].Value;
-                var number = m.Groups["number"].Value;
-                var myTestInfo = new TestInfo()
+                var name = m.Groups[FieldNameTestname].Value;
+                var numberStr = m.Groups[FieldNameNumber].Value;
+                int number;
+                int.TryParse(numberStr, out number);
+                var newinfo = new CTestInfo.TestInfo
                 {
                     Name = name,
-                    Number = int.Parse(number)
+                    Number = number,
                 };
-                CTestNames.Add(myTestInfo);
+                info.Tests.Add(newinfo);
             }
         }
     }

@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using Microsoft.VisualStudio.TestPlatform.ObjectModel.Adapter;
+using Microsoft.VisualStudio.TestPlatform.ObjectModel.Logging;
 
 namespace ImplemenationCTestTestAdapter
 {
@@ -23,7 +25,6 @@ namespace ImplemenationCTestTestAdapter
         {
             public string Name;
             public string Value;
-            //public CMakeCacheEntryType Type;
         }
 
         public event Action CacheChanged;
@@ -35,6 +36,7 @@ namespace ImplemenationCTestTestAdapter
 
         private string _cmakeCacheFile = "CMakeCache.txt";
         private string _cmakeCacheDir;
+        private FileInfo _cmakeCacheInfo;
         private CMakeCacheEntry _tmpEntry;
 
         public string CMakeCacheFile
@@ -111,13 +113,30 @@ namespace ImplemenationCTestTestAdapter
             ReloadCMakeCache();
         }
 
-        public void ReloadCMakeCache()
+        public void ReloadCMakeCache(IFrameworkHandle log = null)
         {
+            var cMakeCacheFileName = Path.Combine(CMakeCacheDir, CMakeCacheFile);
+            var newInfo = new FileInfo(cMakeCacheFileName);
+            if (_cmakeCacheInfo != null)
+            {
+                log?.SendMessage(TestMessageLevel.Informational,
+                    "CMakeCache.ReloadCMakeCache: comparing already loaded cache");
+                if (_cmakeCacheInfo.FullName == newInfo.FullName &&
+                    _cmakeCacheInfo.LastWriteTime == newInfo.LastWriteTime &&
+                    newInfo.Exists)
+                {
+                    log?.SendMessage(TestMessageLevel.Informational,
+                        "CMakeCache.ReloadCMakeCache: cache did not change, not reloading");
+                    return;
+                }
+            }
+            log?.SendMessage(TestMessageLevel.Informational,
+                $"CMakeCache.ReloadCMakeCache: reloading cmake cache from \"{cMakeCacheFileName}\"");
+            _cmakeCacheInfo = newInfo;
             _cacheEntries.Clear();
-            string cMakeCacheFileName = Path.Combine(CMakeCacheDir, CMakeCacheFile);
             if (!File.Exists(cMakeCacheFileName))
             {
-                CTestLogger.Instance.LogMessage("cache not found at: " + cMakeCacheFileName);
+                log?.SendMessage(TestMessageLevel.Error, $"cache not found at:\"{cMakeCacheFileName}\"");
                 return;
             }
             var stream = new FileStream(cMakeCacheFileName, FileMode.Open,
@@ -138,11 +157,11 @@ namespace ImplemenationCTestTestAdapter
                 var c = CacheEntryRegex.Split(line);
                 if (c.Length != 5)
                 {
-                    CTestLogger.Instance.LogMessage("cache load: element count != 5: (" + c.Length + ")" + line);
-                    int count = 0;
+                    log?.SendMessage(TestMessageLevel.Error, "cache load: element count != 5: (" + c.Length + ")" + line);
+                    var count = 0;
                     foreach (var asdf in c)
                     {
-                        CTestLogger.Instance.LogMessage("v" + count + ": " + asdf);
+                        log?.SendMessage(TestMessageLevel.Error, "v" + count + ": " + asdf);
                         count++;
                     }
                     continue;
@@ -150,7 +169,7 @@ namespace ImplemenationCTestTestAdapter
                 CMakeCacheEntryType myType;
                 if (!Enum.TryParse(c[2], out myType))
                 {
-                    CTestLogger.Instance.LogMessage("cache load: error parsing enum Type: " + c[2]);
+                    log?.SendMessage(TestMessageLevel.Error, "cache load: error parsing enum Type: " + c[2]);
                     continue;
                 }
                 var entry = new CMakeCacheEntry()

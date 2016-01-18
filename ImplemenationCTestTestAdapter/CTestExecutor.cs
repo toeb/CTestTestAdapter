@@ -3,63 +3,89 @@ using Microsoft.VisualStudio.TestPlatform.ObjectModel.Adapter;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.IO;
-using System.Xml;
 using System.Text.RegularExpressions;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.Logging;
 
 namespace ImplemenationCTestTestAdapter
 {
-    /// <summary>
-    /// this class executes a ctest TestCase by calling ctest -I 
-    /// </summary>
     [ExtensionUri(ExecutorUriString)]
     public class CTestExecutor : ITestExecutor
     {
-        /// <summary>
-        /// this identifies the testexecuter
-        /// </summary>
         public const string ExecutorUriString = "executor://CTestExecutor/v1";
 
+        public static readonly Uri ExecutorUri = new Uri(ExecutorUriString);
+
+        public bool EnableLogging { get; set; } = false;
+
         private bool _cancelled;
+        private readonly CMakeCache _cmakeCache;
+        private readonly BuildConfiguration _buildConfiguration;
+        private readonly CTestInfo _ctestInfo;
+
+        public CTestExecutor()
+        {
+            _buildConfiguration = new BuildConfiguration();
+            _cmakeCache = new CMakeCache
+            {
+                CMakeCacheDir = _buildConfiguration.SolutionDir
+            };
+            _ctestInfo = new CTestInfo();
+        }
 
         public void Cancel()
         {
             _cancelled = true;
         }
 
-        /// <summary>
-        /// delegates to other RunTests signature
-        /// </summary>
-        /// <param name="sources"></param>
-        /// <param name="runContext"></param>
-        /// <param name="frameworkHandle"></param>
         public void RunTests(IEnumerable<string> sources, IRunContext runContext, IFrameworkHandle frameworkHandle)
         {
-            foreach (var tcs in sources.Select(CTestDiscoverer.ParseTestSource))
+            frameworkHandle.SendMessage(TestMessageLevel.Informational,
+                $"CTestExecutor.RunTests(src)");
+            var testInfoFilename = Path.Combine(_buildConfiguration.SolutionDir, CTestInfo.CTestInfoFileName);
+            if (!File.Exists(testInfoFilename))
             {
-                RunTests(tcs, runContext, frameworkHandle);
+                frameworkHandle.SendMessage(TestMessageLevel.Warning, $"CTestExecutor.RunTests: didn't find info file:{testInfoFilename}");
+            }
+            _ctestInfo.ReadTestInfoFile(testInfoFilename);
+            foreach (var s in sources)
+            {
+                if (EnableLogging)
+                {
+                    frameworkHandle.SendMessage(TestMessageLevel.Informational,
+                        $"CTestExecutor.RunTests(src) => CTestDiscoverer.ParseTestContainerFile({s})");
+                }
+                var cases = CTestDiscoverer.ParseTestContainerFile(s, frameworkHandle, EnableLogging, _ctestInfo);
+                RunTests(cases.Values, runContext, frameworkHandle);
             }
         }
 
-        /// <summary>
-        /// runs a separate ctest call for every testcase
-        /// 
-        /// @maybe use -I to run all test cases
-        /// @todo add more metadata to tests!
-        /// </summary>
-        /// <param name="tests"></param>
-        /// <param name="runContext"></param>
-        /// <param name="frameworkHandle"></param>
         public void RunTests(IEnumerable<TestCase> tests, IRunContext runContext, IFrameworkHandle frameworkHandle)
         {
-            var cTestExecutable = "";
-            var cTestWorkingDirectory = "";
-            var firstRun = true;
-            var cTestExecutableExists = false;
-            var cTestWorkingDirectoryExists = false;
-            var cfg = BuildConfiguration.GetCurrentActiveConfiguration();
+            if (!_buildConfiguration.HasDte)
+            {
+                frameworkHandle.SendMessage(TestMessageLevel.Error,
+                    "CTestExecutor.RunTests: DTE object not found, cannot run tests.");
+                return;
+            }
+            if (!File.Exists(_cmakeCache.CTestExecutable))
+            {
+                frameworkHandle.SendMessage(TestMessageLevel.Error,
+                    $"CTestExecutor.RunTests: ctest not found: \"{_cmakeCache.CTestExecutable}\"");
+                return;
+            }
+            if (!Directory.Exists(_cmakeCache.CMakeCacheDir))
+            {
+                frameworkHandle.SendMessage(TestMessageLevel.Error,
+                    $"CTestExecutor.RunTests: working directory not found: \"{_cmakeCache.CMakeCacheDir}\"");
+                return;
+            }
+            if (EnableLogging)
+            {
+                frameworkHandle.SendMessage(TestMessageLevel.Informational,
+                $"CTestExecutor.RunTests: working directory is \"{_cmakeCache.CMakeCacheDir}\"");
+            }
+            // run test cases
             foreach (var test in tests)
             {
                 if (_cancelled)
@@ -67,63 +93,15 @@ namespace ImplemenationCTestTestAdapter
                     break;
                 }
                 // verify we have a run directory and a ctest executable
-                if (firstRun)
-                {
-                    firstRun = false;
-                    var doc = new XmlDocument();
-                    doc.Load(test.Source);
-                    var ctestDir = doc.SelectSingleNode("//CTestContainer/CTestWorkingDirectory");
-                    var ctestExe = doc.SelectSingleNode("//CTestContainer/CTestExecutable");
-                    if (ctestDir == null)
-                    {
-                        frameworkHandle.SendMessage(TestMessageLevel.Error, "CTestWorkingDirectory not found in source");
-                    }
-                    else
-                    {
-                        var text = (XmlText) ctestDir.FirstChild;
-                        cTestWorkingDirectory = text?.Value;
-                        if (cTestWorkingDirectory != null)
-                        {
-                            cTestWorkingDirectoryExists = Directory.Exists(cTestWorkingDirectory);
-                        }
-                    }
-                    if (ctestExe == null)
-                    {
-                        frameworkHandle.SendMessage(TestMessageLevel.Error, "CTestExecutable not found in source");
-                    }
-                    else
-                    {
-                        var text = (XmlText) ctestExe.FirstChild;
-                        cTestExecutable = text?.Value;
-                        if (cTestExecutable != null)
-                        {
-                            cTestExecutableExists = File.Exists(cTestExecutable);
-                        }
-                    }
-                    frameworkHandle.SendMessage(TestMessageLevel.Informational,
-                        $"running tests in: {cTestWorkingDirectory}");
-                }
-                if (!cTestExecutableExists)
-                {
-                    frameworkHandle.SendMessage(TestMessageLevel.Error,
-                        $"CTestExecutable not found: \"{cTestExecutable}\"");
-                    return;
-                }
-                if (!cTestWorkingDirectoryExists)
-                {
-                    frameworkHandle.SendMessage(TestMessageLevel.Error,
-                        $"CTestWorkingDirectory not found: \"{cTestWorkingDirectory}\"");
-                    return;
-                }
                 var args = $"-R \"^{test.FullyQualifiedName}$\"";
-                args += $" -C \"{cfg}\"";
+                args += $" -C \"{_buildConfiguration.ConfigurationName}\"";
                 var process = new Process
                 {
                     StartInfo = new ProcessStartInfo()
                     {
                         Arguments = args,
-                        FileName = cTestExecutable,
-                        WorkingDirectory = cTestWorkingDirectory,
+                        FileName = _cmakeCache.CTestExecutable,
+                        WorkingDirectory = _cmakeCache.CMakeCacheDir,
                         CreateNoWindow = true,
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
@@ -132,7 +110,7 @@ namespace ImplemenationCTestTestAdapter
                     }
                 };
                 frameworkHandle.SendMessage(TestMessageLevel.Informational,
-                    $"running: {cTestExecutable} {args}");
+                    $"CTestExecutor.RunTests: {_cmakeCache.CTestExecutable} {args}");
                 process.Start();
                 process.WaitForExit();
                 var output = process.StandardOutput.ReadToEnd();
@@ -144,34 +122,26 @@ namespace ImplemenationCTestTestAdapter
                 if (timeCount != 1)
                 {
                     frameworkHandle.SendMessage(TestMessageLevel.Warning,
-                        $"bad number of result times found:{timeCount}");
+                        $"CTestExecutor.RunTests: bad number of result times found:{timeCount}");
                     frameworkHandle.SendMessage(TestMessageLevel.Warning,
-                        $"output: {output}");
+                        $"CTestExecutor.RunTests: output: {output}");
                     frameworkHandle.SendMessage(TestMessageLevel.Warning,
-                        "-----------------------------");
+                        "CTestExecutor.RunTests: -----------------------------");
                 }
                 var message = "";
-
                 if (exitCode != 0)
                 {
                     // In case of a failure, try to parse the fileInfo.DirectoryName/Testing/Temporary
                     // file for failed tests and try to extract the reason for the test failure.
-
-                    var logFileName = cTestWorkingDirectory + "/Testing/Temporary/LastTest.log";
-
-                    frameworkHandle.SendMessage(TestMessageLevel.Informational,
-                        $"reading runtimes from \"{logFileName}\"");
-
+                    var logFileName = _cmakeCache.CMakeCacheDir + "/Testing/Temporary/LastTest.log";
                     var content = File.ReadAllText(logFileName);
                     var error = Regex.Match(content, @"Output:\r\n-{58}\r\n(?<output>.*)\r\n<end of output>",
                         RegexOptions.Singleline);
                     message = error.Groups["output"].Value;
                 }
-
                 var computerName = Environment.MachineName;
                 var timeSpan = TimeSpan.FromSeconds(double.Parse(time[0].Groups["time"].Value,
                     System.Globalization.CultureInfo.InvariantCulture.NumberFormat));
-
                 var testResult = new TestResult(test)
                 {
                     ComputerName = computerName,
@@ -182,7 +152,5 @@ namespace ImplemenationCTestTestAdapter
                 frameworkHandle.RecordResult(testResult);
             }
         }
-
-        public static Uri ExecutorUri = new Uri(ExecutorUriString);
     }
 }
