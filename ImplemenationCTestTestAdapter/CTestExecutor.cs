@@ -14,6 +14,12 @@ namespace ImplemenationCTestTestAdapter
     {
         public const string ExecutorUriString = "executor://CTestExecutor/v1";
 
+        private const string RegexFieldOutput = "output";
+        private const string RegexFieldDuration = "duration";
+
+        private static Regex RegexOutput = new Regex($@"Output:\r\n-+\r\n(?<{RegexFieldOutput}>.*)\r\n<end of output>\r\n", RegexOptions.Singleline);
+        private static Regex RegexDuration = new Regex($@"<end of output>\r\nTest time =\s+(?<{RegexFieldDuration}>[\d\.]+) sec\r\n", RegexOptions.Singleline);
+
         public static readonly Uri ExecutorUri = new Uri(ExecutorUriString);
 
         public bool EnableLogging { get; set; } = false;
@@ -114,41 +120,28 @@ namespace ImplemenationCTestTestAdapter
                 process.Start();
                 process.WaitForExit();
                 var output = process.StandardOutput.ReadToEnd();
-                var exitCode = process.ExitCode;
-                var matchString =
-                    $@"Test\s*#[0-9]+:\s+\S*{test.FullyQualifiedName}\S*\s*\.+[\* ]+.+\s+(?<time>\S*)\s+sec";
-                var time = Regex.Matches(output, matchString);
-                var timeCount = time.Count;
-                if (timeCount != 1)
-                {
-                    frameworkHandle.SendMessage(TestMessageLevel.Warning,
-                        $"CTestExecutor.RunTests: bad number of result times found:{timeCount}");
-                    frameworkHandle.SendMessage(TestMessageLevel.Warning,
-                        $"CTestExecutor.RunTests: output: {output}");
-                    frameworkHandle.SendMessage(TestMessageLevel.Warning,
-                        "CTestExecutor.RunTests: -----------------------------");
-                }
-                var message = "";
-                if (exitCode != 0)
-                {
-                    // In case of a failure, try to parse the fileInfo.DirectoryName/Testing/Temporary
-                    // file for failed tests and try to extract the reason for the test failure.
-                    var logFileName = _cmakeCache.CMakeCacheDir + "/Testing/Temporary/LastTest.log";
-                    var content = File.ReadAllText(logFileName);
-                    var error = Regex.Match(content, @"Output:\r\n-{58}\r\n(?<output>.*)\r\n<end of output>",
-                        RegexOptions.Singleline);
-                    message = error.Groups["output"].Value;
-                }
-                var computerName = Environment.MachineName;
-                var timeSpan = TimeSpan.FromSeconds(double.Parse(time[0].Groups["time"].Value,
+                var logFileName = _cmakeCache.CMakeCacheDir + "/Testing/Temporary/LastTest.log";
+                var content = File.ReadAllText(logFileName);
+                var matchesDuration = RegexDuration.Match(content);
+                var timeSpan = TimeSpan.FromSeconds(
+                    double.Parse(matchesDuration.Groups[RegexFieldDuration].Value,
                     System.Globalization.CultureInfo.InvariantCulture.NumberFormat));
                 var testResult = new TestResult(test)
                 {
-                    ComputerName = computerName,
+                    ComputerName = Environment.MachineName,
                     Duration = timeSpan,
-                    ErrorMessage = message,
-                    Outcome = exitCode == 0 ? TestOutcome.Passed : TestOutcome.Failed
+                    Outcome = process.ExitCode == 0 ? TestOutcome.Passed : TestOutcome.Failed
                 };
+                if (process.ExitCode != 0)
+                {
+                    var matchesOutput = RegexOutput.Match(content);
+                    testResult.ErrorMessage = matchesOutput.Groups[RegexFieldOutput].Value;
+                    frameworkHandle.SendMessage(TestMessageLevel.Error,
+                        $"CTestExecutor.RunTests: ERROR IN TEST {test.FullyQualifiedName}:");
+                    frameworkHandle.SendMessage(TestMessageLevel.Error, $"{output}");
+                    frameworkHandle.SendMessage(TestMessageLevel.Error,
+                        $"CTestExecutor.RunTests: END OF TEST OUTPUT FROM {test.FullyQualifiedName}");
+                }
                 frameworkHandle.RecordResult(testResult);
             }
         }
