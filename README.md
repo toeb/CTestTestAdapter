@@ -1,6 +1,6 @@
 # CTestTestAdapter
 
-A Test Adapter to run [kitware's CMake/CTest](http://cmake.org/) from the Visual Studio (2013) TestExplorer
+A Test Adapter to run [kitware's CMake/CTest](http://cmake.org/) from the Visual Studio (2013/2015) TestExplorer
 
 ## Screenshot
 
@@ -8,9 +8,13 @@ A Test Adapter to run [kitware's CMake/CTest](http://cmake.org/) from the Visual
 
 ## Features
 
-* Discovers all tests which are visable in your CMakeLists.txt by running `ctest -N` in your binary_dir
+* Discovers all tests which are visable in your CMakeLists.txt by running `ctest -N` in your binary_dir (i.e. the directory where your .sln file is)
 * Control of test execution through Test Explorer Window
 * Success or Fail based on Outcome of ctest run
+* Shows console output of test if test fails
+* Shows source line where test is executed in CTestTestfile.cmake
+* Allows debugging of tests
+  * Visual Studio may take a few moments to attach itself to the executed program
 
 ## Disclaimer
 
@@ -21,7 +25,7 @@ I hope others might want to help developing it as I can't promise to work on it
 
 ## Future
 
-* More Test MetaData (line number, file, etc)
+* ~~More Test MetaData (line number, file, etc)~~
 * More efficient Test Runs
 
 
