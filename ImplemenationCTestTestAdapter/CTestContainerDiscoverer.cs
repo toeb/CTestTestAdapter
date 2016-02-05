@@ -1,6 +1,5 @@
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.TestWindow.Data;
 using Microsoft.VisualStudio.TestWindow.Extensibility;
 using System;
 using System.Collections.Generic;
@@ -8,94 +7,145 @@ using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using ImplemenationCTestTestAdapter.Events;
 
 namespace ImplemenationCTestTestAdapter
 {
-    /// <summary>
-    /// The CTestContainerDiscoverer connects with visual studios TestExplorer window
-    /// it provides the filenames for CTestDiscoverer through the TestContainers enumerable
-    /// </summary>
-    [Export(typeof(ITestContainerDiscoverer))]
-    public class CTestContainerDiscoverer : ITestContainerDiscoverer
+    [Export(typeof (ITestContainerDiscoverer))]
+    public class CTestContainerDiscoverer : CTestContainerDiscovererBase
     {
-        [Import(typeof(SVsServiceProvider))]
-        public IServiceProvider ServiceProvider { get; set; }
+        public string TestFileExtension => ".cmake";
+        public string TestFileName => "CTestTestfile";
 
-        [Import]
-        public IUnitTestStorage Storage { get; set; }
-        
+        private readonly CTestLogWindow _log;
+        private readonly BuildConfiguration _buildConfiguration;
+        private readonly CMakeCache _cmakeCache;
+        private readonly CTestTestCollector _testCollector;
+        private readonly CTestInfo _testInfo;
+
         [ImportingConstructor]
-        public CTestContainerDiscoverer()
+        public CTestContainerDiscoverer(
+            [Import(typeof (SVsServiceProvider))] IServiceProvider serviceProvider)
+            : base(serviceProvider, new CTestTestfileAddRemoveListener(), CTestExecutor.ExecutorUriString)
         {
-
-        }
-
-        public Uri ExecutorUri
-        {
-            get { return CTestExecutor.ExecutorUri; }
-        }
-
-
-        /// <summary>
-        ///  Get all CTestContainers by traversing the file sytem using the CTestTestfile.cmake
-        ///  file structure.
-        /// </summary>
-        public IEnumerable<ITestContainer> TestContainers
-        {
-            get
+            _log = new CTestLogWindow
             {
-                // TODO: Add a cache for the containers. Only needs an update if CMake was rerun.
-                // Check if it is feasable to use the time stamp of the root CTestTestfile.cmake.
+                Enabled = false,
+                AutoRaise = false
+            };
+            _buildConfiguration = new BuildConfiguration(serviceProvider);
+            _cmakeCache = new CMakeCache();
+            _testCollector = new CTestTestCollector();
+            _testInfo = new CTestInfo();
+            _cmakeCache.CMakeCacheDir = _buildConfiguration.SolutionDir;
+            _cmakeCache.CacheChanged += OnCMakeCacheChanged;
+            _cmakeCache.StartWatching();
+            _testCollector.CTestWorkingDir = _cmakeCache.CMakeCacheDir;
+            _testCollector.CTestExecutable = _cmakeCache.CTestExecutable;
+        }
 
-                /// gets solution directory
-                var solution = (IVsSolution)ServiceProvider.GetService(typeof(SVsSolution));
-                object solutionpath_o = "";
-                solution.GetProperty((int)__VSPROPID.VSPROPID_SolutionDirectory, out solutionpath_o);
-                var solution_path = solutionpath_o as string;
-                
-                var files = CollectCTestTestfiles(solution_path);
+        private void OnCMakeCacheChanged()
+        {
+            _testCollector.CTestExecutable = _cmakeCache.CTestExecutable;
+            _testCollector.CTestWorkingDir = _cmakeCache.CMakeCacheDir;
+            ResetTestContainers();
+        }
 
-                return files.Select(f => new CTestContainer(this, f));
+        private void UpdateListOfValidTests()
+        {
+            _testCollector.CurrentActiveConfig = _buildConfiguration.ConfigurationName;
+            _log.OutputLine("CTestContainerDiscoverer.UpdateListOfValidTests");
+            _log.OutputLine($"-- working dir:{_testCollector.CTestWorkingDir}");
+            _log.OutputLine($"-- ctest:      {_testCollector.CTestExecutable}");
+            _log.OutputLine($"-- config:     {_testCollector.CurrentActiveConfig}");
+            _log.OutputLine($"-- args:       {_testCollector.CTestArguments}");
+            _testCollector.CollectTestCases(_testInfo);
+            _log.OutputLine($"=> {_testInfo.Tests.Count}");
+            _testInfo.WriteTestInfoFile(Path.Combine(_buildConfiguration.SolutionDir, CTestInfo.CTestInfoFileName));
+            // TODO only change _validTests if they really changed!!!
+            foreach (var test in _testInfo.Tests)
+            {
+                _log.OutputLine($"valid test: {test.Number} := {test.Name}");
             }
+        }
+
+#region CTestContainerDiscovererBase
+
+        protected override bool IsTestContainerFile(string file)
+        {
+            try
+            {
+                return TestFileExtension.Equals(
+                    Path.GetExtension(file),
+                    StringComparison.OrdinalIgnoreCase);
+            }
+            catch (Exception /*e*/)
+            {
+                // TODO do some messaging here or so ...
+            }
+            return false;
         }
 
         private IEnumerable<string> CollectCTestTestfiles(string currentDir)
         {
-            var file = new FileInfo(currentDir + "/CTestTestfile.cmake");
-            
-            if (file.Exists)
+            _log.OutputLine($"CTestContainerDiscoverer.CollectCTestTestfiles({currentDir})");
+            var file = new FileInfo(Path.Combine(currentDir, TestFileName + TestFileExtension));
+            if (!file.Exists)
             {
-                var content = file.OpenText().ReadToEnd();
-                var matches = Regex.Matches(content, @".*[sS][uB][bB][dD][iI][rR][sS]\s*\((?<subdir>.*)\)");
-                var subdirs = new List<string>();
-                foreach (Match match in matches)
-                {
-                    subdirs.Add(match.Groups["subdir"].Value);
-                }
-                
-                if (subdirs.Count == 0 && content.Contains("add_test"))
+                _log.OutputLine("CTestContainerDiscoverer.CollectCTestTestfiles(no file)");
+                return Enumerable.Empty<string>();
+            }
+            var content = file.OpenText().ReadToEnd();
+            var matches = Regex.Matches(content, @".*[sS][uB][bB][dD][iI][rR][sS]\s*\((?<subdir>.*)\)");
+            var subdirs = (from Match match in matches select match.Groups["subdir"].Value).ToList();
+            if (content.Contains("add_test"))
+            {
+                _log.OutputLine("CTestContainerDiscoverer.CollectCTestTestfiles: tests found");
+                if (subdirs.Count == 0)
                 {
                     return Enumerable.Repeat(file.FullName, 1);
                 }
-                else if (subdirs.Count > 0 && content.Contains("add_test"))
+                if (subdirs.Count > 0)
                 {
+                    _log.OutputLine("CTestContainerDiscoverer.CollectCTestTestfiles: recurse");
                     return subdirs
-                        .SelectMany(d => CollectCTestTestfiles(currentDir + "/" + d))
+                        .SelectMany(d => CollectCTestTestfiles(Path.Combine(currentDir, d)))
                         .Concat(Enumerable.Repeat(file.FullName, 1));
                 }
-                else
-                {
-                    return subdirs
-                        .SelectMany(d => CollectCTestTestfiles(currentDir + "/" + d));
-                }
             }
-            else
-            {
-                return Enumerable.Empty<string>();
-            }
+            _log.OutputLine("CTestContainerDiscoverer.CollectCTestTestfiles: NO tests found");
+            _log.OutputLine("CTestContainerDiscoverer.CollectCTestTestfiles: recurse");
+            return subdirs
+                .SelectMany(d => CollectCTestTestfiles(Path.Combine(currentDir, d)));
         }
 
+        protected override IEnumerable<string> FindTestFiles()
+        {
+            _log.OutputLine("CTestContainerDiscoverer.FindTestFiles START");
+            var res = CollectCTestTestfiles(_cmakeCache.CMakeCacheDir);
+            _log.OutputLine("CTestContainerDiscoverer.FindTestFiles END");
+            return res;
+        }
 
-        public event EventHandler TestContainersUpdated;
+        protected override IEnumerable<string> FindTestFiles(IVsProject project)
+        {
+            // we don't want to react to loading/unloading of projects 
+            // within the solution. Test discovery is only done using
+            // ctest
+            return new List<string>();
+        }
+
+        protected override ITestContainer GetNewTestContainer(string s)
+        {
+            _log.OutputLine($"CTestContainerDiscoverer.GetNewTestContainer: (try) \"{s}\"");
+            return new CTestContainer(this, s);
+        }
+
+        protected override void TestContainersAboutToBeUpdated()
+        {
+            UpdateListOfValidTests();
+        }
+
+#endregion
     }
 }
