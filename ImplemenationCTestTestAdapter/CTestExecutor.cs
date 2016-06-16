@@ -36,6 +36,8 @@ namespace ImplemenationCTestTestAdapter
         private ChildProcessWatcher _childWatcher;
 #endif
 
+        private bool _runningFromSources;
+
         private bool _cancelled;
         private readonly CMakeCache _cmakeCache;
         private readonly BuildConfiguration _buildConfiguration;
@@ -43,6 +45,7 @@ namespace ImplemenationCTestTestAdapter
 
         public CTestExecutor()
         {
+            _runningFromSources = false;
             _buildConfiguration = new BuildConfiguration();
             _cmakeCache = new CMakeCache
             {
@@ -61,8 +64,11 @@ namespace ImplemenationCTestTestAdapter
 
         public void RunTests(IEnumerable<string> sources, IRunContext runContext, IFrameworkHandle frameworkHandle)
         {
+            _runningFromSources = true;
             frameworkHandle.SendMessage(TestMessageLevel.Informational,
                 $"CTestExecutor.RunTests(src)");
+            frameworkHandle.SendMessage(TestMessageLevel.Informational,
+                $"CTestExecutor.RunTests: ctest ({_cmakeCache.CTestExecutable})");
             var testInfoFilename = Path.Combine(_buildConfiguration.SolutionDir, CTestInfo.CTestInfoFileName);
             if (!File.Exists(testInfoFilename))
             {
@@ -80,6 +86,7 @@ namespace ImplemenationCTestTestAdapter
                 var cases = CTestDiscoverer.ParseTestContainerFile(s, frameworkHandle, EnableLogging, _ctestInfo);
                 RunTests(cases.Values, runContext, frameworkHandle);
             }
+            _runningFromSources = false;
         }
 
         public void RunTests(IEnumerable<TestCase> tests, IRunContext runContext, IFrameworkHandle frameworkHandle)
@@ -107,8 +114,11 @@ namespace ImplemenationCTestTestAdapter
                 frameworkHandle.SendMessage(TestMessageLevel.Informational,
                     $"CTestExecutor.RunTests: working directory is \"{_cmakeCache.CMakeCacheDir}\"");
             }
-            frameworkHandle.SendMessage(TestMessageLevel.Informational,
-                $"CTestExecutor.RunTests: ctest ({_cmakeCache.CTestExecutable})");
+            if (!_runningFromSources)
+            {
+                frameworkHandle.SendMessage(TestMessageLevel.Informational,
+                    $"CTestExecutor.RunTests: ctest ({_cmakeCache.CTestExecutable})");
+            }
             // run test cases
             foreach (var test in tests)
             {
@@ -134,7 +144,8 @@ namespace ImplemenationCTestTestAdapter
                 {
                     StartInfo = startInfo
                 };
-                var logFileName = _cmakeCache.CMakeCacheDir + "/Testing/Temporary/LastTest.log";
+                var logFileDir = _cmakeCache.CMakeCacheDir + "\\Testing\\Temporary";
+                var logFileName = logFileDir + "\\LastTest.log";
                 if (File.Exists(logFileName))
                 {
                     File.Delete(logFileName);
@@ -223,6 +234,8 @@ namespace ImplemenationCTestTestAdapter
 #endif
                 var output = process.StandardOutput.ReadToEnd();
                 var content = File.ReadAllText(logFileName);
+                var logFileBackup = logFileDir + "\\" + test.FullyQualifiedName + ".log";
+                File.Copy(logFileName, logFileBackup, true);
                 var matchesDuration = RegexDuration.Match(content);
                 var timeSpan = TimeSpan.FromSeconds(
                     double.Parse(matchesDuration.Groups[RegexFieldDuration].Value,
@@ -243,6 +256,8 @@ namespace ImplemenationCTestTestAdapter
                     frameworkHandle.SendMessage(TestMessageLevel.Error,
                         $"CTestExecutor.RunTests: END OF TEST OUTPUT FROM {test.FullyQualifiedName}");
                 }
+                frameworkHandle.SendMessage(TestMessageLevel.Informational,
+                    $"CTestExecutor.RunTests: Log saved to file://{logFileBackup}");
                 frameworkHandle.RecordResult(testResult);
             }
         }
