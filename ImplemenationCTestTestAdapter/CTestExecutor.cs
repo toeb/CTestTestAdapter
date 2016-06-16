@@ -19,15 +19,22 @@ namespace ImplemenationCTestTestAdapter
         private const string RegexFieldOutput = "output";
         private const string RegexFieldDuration = "duration";
 
-        private static Regex RegexOutput = new Regex($@"Output:\r\n-+\r\n(?<{RegexFieldOutput}>.*)\r\n<end of output>\r\n", RegexOptions.Singleline);
-        private static Regex RegexDuration = new Regex($@"<end of output>\r\nTest time =\s+(?<{RegexFieldDuration}>[\d\.]+) sec\r\n", RegexOptions.Singleline);
+        private static Regex RegexOutput =
+            new Regex($@"Output:\r\n-+\r\n(?<{RegexFieldOutput}>.*)\r\n<end of output>\r\n",
+                RegexOptions.Singleline);
+
+        private static Regex RegexDuration =
+            new Regex($@"<end of output>\r\nTest time =\s+(?<{RegexFieldDuration}>[\d\.]+) sec\r\n",
+                RegexOptions.Singleline);
 
         public static readonly Uri ExecutorUri = new Uri(ExecutorUriString);
 
         public bool EnableLogging { get; set; } = false;
 
+#if false
         private bool _childWatcherEnabled = false;
         private ChildProcessWatcher _childWatcher;
+#endif
 
         private bool _cancelled;
         private readonly CMakeCache _cmakeCache;
@@ -42,7 +49,9 @@ namespace ImplemenationCTestTestAdapter
                 CMakeCacheDir = _buildConfiguration.SolutionDir
             };
             _ctestInfo = new CTestInfo();
+#if false
             _childWatcher = new ChildProcessWatcher();
+#endif
         }
 
         public void Cancel()
@@ -57,7 +66,8 @@ namespace ImplemenationCTestTestAdapter
             var testInfoFilename = Path.Combine(_buildConfiguration.SolutionDir, CTestInfo.CTestInfoFileName);
             if (!File.Exists(testInfoFilename))
             {
-                frameworkHandle.SendMessage(TestMessageLevel.Warning, $"CTestExecutor.RunTests: didn't find info file:{testInfoFilename}");
+                frameworkHandle.SendMessage(TestMessageLevel.Warning,
+                    $"CTestExecutor.RunTests: didn't find info file:{testInfoFilename}");
             }
             _ctestInfo.ReadTestInfoFile(testInfoFilename);
             foreach (var s in sources)
@@ -95,8 +105,10 @@ namespace ImplemenationCTestTestAdapter
             if (EnableLogging)
             {
                 frameworkHandle.SendMessage(TestMessageLevel.Informational,
-                $"CTestExecutor.RunTests: working directory is \"{_cmakeCache.CMakeCacheDir}\"");
+                    $"CTestExecutor.RunTests: working directory is \"{_cmakeCache.CMakeCacheDir}\"");
             }
+            frameworkHandle.SendMessage(TestMessageLevel.Informational,
+                $"CTestExecutor.RunTests: ctest ({_cmakeCache.CTestExecutable})");
             // run test cases
             foreach (var test in tests)
             {
@@ -107,7 +119,7 @@ namespace ImplemenationCTestTestAdapter
                 // verify we have a run directory and a ctest executable
                 var args = $"-R \"^{test.FullyQualifiedName}$\"";
                 args += $" -C \"{_buildConfiguration.ConfigurationName}\"";
-                var startInfo = new ProcessStartInfo()
+                var startInfo = new ProcessStartInfo
                 {
                     Arguments = args,
                     FileName = _cmakeCache.CTestExecutable,
@@ -122,10 +134,16 @@ namespace ImplemenationCTestTestAdapter
                 {
                     StartInfo = startInfo
                 };
+                var logFileName = _cmakeCache.CMakeCacheDir + "/Testing/Temporary/LastTest.log";
+                if (File.Exists(logFileName))
+                {
+                    File.Delete(logFileName);
+                }
                 frameworkHandle.SendMessage(TestMessageLevel.Informational,
-                    $"CTestExecutor.RunTests: {_cmakeCache.CTestExecutable} {args}");
+                    $"CTestExecutor.RunTests: ctest {test.FullyQualifiedName} -C {_buildConfiguration.ConfigurationName}");
                 if (runContext.IsBeingDebugged)
                 {
+#if false
                     if (_childWatcherEnabled)
                     {
                         _childWatcher.Parent = process;
@@ -133,20 +151,18 @@ namespace ImplemenationCTestTestAdapter
                         _childWatcher.Framework = frameworkHandle;
                         _childWatcher.Start();
                     }
+#endif
                     process.Start();
-                    frameworkHandle.SendMessage(TestMessageLevel.Informational,
-                        $"CTestExecutor.RunTests: ctest process id ({process.Id}) at ({process.StartTime.ToString()})");
-#if true
+#if false
                     var tryCount = 0;
-                    int processId = 0;
-                    while (tryCount++ < 10)
+                    var processId = 0;
+                    frameworkHandle.SendMessage(TestMessageLevel.Informational, "CTestExecutor.RunTests: attaching ...");
+                    while (tryCount++ < 10 && !process.HasExited)
                     {
-                        frameworkHandle.SendMessage(TestMessageLevel.Informational,
-                            $"CTestExecutor.RunTests: try attaching to process ({tryCount} run)");
                         try
                         {
                             var ctestChildren = ProcessExtensions.GetChildProcesses(process);
-                            if(ctestChildren.Count == 0)
+                            if (ctestChildren.Count == 0)
                             {
                                 continue;
                             }
@@ -157,12 +173,9 @@ namespace ImplemenationCTestTestAdapter
                                 {
                                     if (dteChild.ProcessID == ctestChild.Id)
                                     {
-                                        frameworkHandle.SendMessage(TestMessageLevel.Informational,
-                                            $"CTestExecutor.RunTests: attaching to process ({ctestChild.Id}) ...");
-                                        try {
+                                        try
+                                        {
                                             dteChild.Attach();
-                                            frameworkHandle.SendMessage(TestMessageLevel.Informational,
-                                                $"CTestExecutor.RunTests: ... done");
                                             processId = ctestChild.Id;
                                         }
                                         catch (COMException e)
@@ -173,7 +186,7 @@ namespace ImplemenationCTestTestAdapter
                                         break;
                                     }
                                 }
-                                if(processId != 0)
+                                if (processId != 0)
                                 {
                                     break;
                                 }
@@ -190,6 +203,11 @@ namespace ImplemenationCTestTestAdapter
                             System.Threading.Thread.Sleep(1000);
                         }
                     }
+                    if (processId == 0)
+                    {
+                        frameworkHandle.SendMessage(TestMessageLevel.Informational,
+                            "CTestExecutor.RunTests: attaching failed");
+                    }
 #endif
                 }
                 else
@@ -197,17 +215,18 @@ namespace ImplemenationCTestTestAdapter
                     process.Start();
                 }
                 process.WaitForExit();
+#if false
                 if (_childWatcherEnabled)
                 {
                     _childWatcher.Stop();
                 }
+#endif
                 var output = process.StandardOutput.ReadToEnd();
-                var logFileName = _cmakeCache.CMakeCacheDir + "/Testing/Temporary/LastTest.log";
                 var content = File.ReadAllText(logFileName);
                 var matchesDuration = RegexDuration.Match(content);
                 var timeSpan = TimeSpan.FromSeconds(
                     double.Parse(matchesDuration.Groups[RegexFieldDuration].Value,
-                    System.Globalization.CultureInfo.InvariantCulture.NumberFormat));
+                        System.Globalization.CultureInfo.InvariantCulture.NumberFormat));
                 var testResult = new TestResult(test)
                 {
                     ComputerName = Environment.MachineName,
