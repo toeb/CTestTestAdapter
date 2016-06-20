@@ -20,7 +20,9 @@ namespace ImplemenationCTestTestAdapter
         private const string RegexFieldNameNumber = "number";
         private const string RegexFieldNameTestname = "testname";
 
-        private static readonly Regex NameNumberRegex = new Regex($@"#:(?<{RegexFieldNameNumber}>\d+) t:(?<{RegexFieldNameTestname}>\S+)");
+        private static readonly Regex NameNumberRegex =
+            new Regex($@"#:(?<{RegexFieldNameNumber}>\d+) t:(?<{RegexFieldNameTestname}>\S+)");
+
         private static readonly Regex LinesRegex = new Regex(@"v:\d+");
 
         private readonly List<TestInfo> _tests;
@@ -38,7 +40,7 @@ namespace ImplemenationCTestTestAdapter
         {
             foreach (var v in _tests)
             {
-                if(v.Name == testname)
+                if (v.Name == testname)
                 {
                     return true;
                 }
@@ -48,41 +50,29 @@ namespace ImplemenationCTestTestAdapter
 
         public TestInfo this[int number]
         {
-            get
-            {
-                return _tests.FirstOrDefault(item => item.Number == number);
-            }
+            get { return _tests.FirstOrDefault(item => item.Number == number); }
         }
 
         public TestInfo this[string name]
         {
-            get
-            {
-                return _tests.FirstOrDefault(item => string.Equals(item.Name, name));
-            }
+            get { return _tests.FirstOrDefault(item => string.Equals(item.Name, name)); }
         }
 
-        public List<TestInfo> Tests
-        {
-            get
-            {
-                return _tests;
-            }
-        }
+        public List<TestInfo> Tests => _tests;
 
         public void ReadTestInfoFile(string fileName)
         {
             _tests.Clear();
-            if(!File.Exists(fileName))
+            if (!File.Exists(fileName))
             {
                 return;
             }
             var str = new StreamReader(fileName);
-            while(!str.EndOfStream)
+            while (!str.EndOfStream)
             {
                 var line = str.ReadLine();
                 var match = NameNumberRegex.Match(line);
-                if(match == null)
+                if (match == null)
                 {
                     continue;
                 }
@@ -102,7 +92,7 @@ namespace ImplemenationCTestTestAdapter
 
         public void WriteTestInfoFile(string fileName)
         {
-            if(Tests.Count == 0)
+            if (Tests.Count == 0)
             {
                 return;
             }

@@ -1,13 +1,12 @@
 using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.Adapter;
 using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.Logging;
-using System.Runtime.InteropServices;
-using ImplemenationCTestTestAdapter.Events;
 
 namespace ImplemenationCTestTestAdapter
 {
@@ -31,11 +30,6 @@ namespace ImplemenationCTestTestAdapter
 
         public bool EnableLogging { get; set; } = false;
 
-#if false
-        private bool _childWatcherEnabled = false;
-        private ChildProcessWatcher _childWatcher;
-#endif
-
         private bool _runningFromSources;
 
         private bool _cancelled;
@@ -52,9 +46,6 @@ namespace ImplemenationCTestTestAdapter
                 CMakeCacheDir = _buildConfiguration.SolutionDir
             };
             _ctestInfo = new CTestInfo();
-#if false
-            _childWatcher = new ChildProcessWatcher();
-#endif
         }
 
         public void Cancel()
@@ -69,6 +60,9 @@ namespace ImplemenationCTestTestAdapter
                 $"CTestExecutor.RunTests(src)");
             frameworkHandle.SendMessage(TestMessageLevel.Informational,
                 $"CTestExecutor.RunTests: ctest ({_cmakeCache.CTestExecutable})");
+            var logFileDir = _cmakeCache.CMakeCacheDir + "\\Testing\\Temporary";
+            frameworkHandle.SendMessage(TestMessageLevel.Informational,
+                $"CTestExecutor.RunTests: logs are written to (file://{logFileDir})");
             var testInfoFilename = Path.Combine(_buildConfiguration.SolutionDir, CTestInfo.CTestInfoFileName);
             if (!File.Exists(testInfoFilename))
             {
@@ -114,10 +108,13 @@ namespace ImplemenationCTestTestAdapter
                 frameworkHandle.SendMessage(TestMessageLevel.Informational,
                     $"CTestExecutor.RunTests: working directory is \"{_cmakeCache.CMakeCacheDir}\"");
             }
+            var logFileDir = _cmakeCache.CMakeCacheDir + "\\Testing\\Temporary";
             if (!_runningFromSources)
             {
                 frameworkHandle.SendMessage(TestMessageLevel.Informational,
                     $"CTestExecutor.RunTests: ctest ({_cmakeCache.CTestExecutable})");
+                frameworkHandle.SendMessage(TestMessageLevel.Informational,
+                    $"CTestExecutor.RunTests: logs are written to (file://{logFileDir})");
             }
             // run test cases
             foreach (var test in tests)
@@ -140,11 +137,10 @@ namespace ImplemenationCTestTestAdapter
                     UseShellExecute = false,
                     WindowStyle = ProcessWindowStyle.Hidden
                 };
-                var process = new System.Diagnostics.Process
+                var process = new Process
                 {
                     StartInfo = startInfo
                 };
-                var logFileDir = _cmakeCache.CMakeCacheDir + "\\Testing\\Temporary";
                 var logFileName = logFileDir + "\\LastTest.log";
                 if (File.Exists(logFileName))
                 {
@@ -154,84 +150,19 @@ namespace ImplemenationCTestTestAdapter
                     $"CTestExecutor.RunTests: ctest {test.FullyQualifiedName} -C {_buildConfiguration.ConfigurationName}");
                 if (runContext.IsBeingDebugged)
                 {
-#if false
-                    if (_childWatcherEnabled)
-                    {
-                        _childWatcher.Parent = process;
-                        _childWatcher.Dte = _buildConfiguration.Dte;
-                        _childWatcher.Framework = frameworkHandle;
-                        _childWatcher.Start();
-                    }
-#endif
-                    process.Start();
-#if false
-                    var tryCount = 0;
-                    var processId = 0;
-                    frameworkHandle.SendMessage(TestMessageLevel.Informational, "CTestExecutor.RunTests: attaching ...");
-                    while (tryCount++ < 10 && !process.HasExited)
-                    {
-                        try
-                        {
-                            var ctestChildren = ProcessExtensions.GetChildProcesses(process);
-                            if (ctestChildren.Count == 0)
-                            {
-                                continue;
-                            }
-                            var dteChildren = _buildConfiguration.Dte.Debugger.LocalProcesses;
-                            foreach (EnvDTE.Process dteChild in dteChildren)
-                            {
-                                foreach (var ctestChild in ctestChildren)
-                                {
-                                    if (dteChild.ProcessID == ctestChild.Id)
-                                    {
-                                        try
-                                        {
-                                            dteChild.Attach();
-                                            processId = ctestChild.Id;
-                                        }
-                                        catch (COMException e)
-                                        {
-                                            frameworkHandle.SendMessage(TestMessageLevel.Informational,
-                                                $"CTestExecutor.RunTests: ... failed:{e.Message}");
-                                        }
-                                        break;
-                                    }
-                                }
-                                if (processId != 0)
-                                {
-                                    break;
-                                }
-                            }
-                            if (processId != 0)
-                            {
-                                break;
-                            }
-                        }
-                        catch (COMException e)
-                        {
-                            frameworkHandle.SendMessage(TestMessageLevel.Informational,
-                                $"CTestExecutor.RunTests: other error:{e.Message}");
-                            System.Threading.Thread.Sleep(1000);
-                        }
-                    }
-                    if (processId == 0)
-                    {
-                        frameworkHandle.SendMessage(TestMessageLevel.Informational,
-                            "CTestExecutor.RunTests: attaching failed");
-                    }
-#endif
+//                    process.Start();
+                    var vars = new System.Collections.Generic.Dictionary<string, string>();
+                    frameworkHandle.LaunchProcessWithDebuggerAttached(
+                        _cmakeCache.CTestExecutable,
+                        _cmakeCache.CMakeCacheDir,
+                        args,
+                        vars);
                 }
                 else
                 {
                     process.Start();
                 }
                 process.WaitForExit();
-#if false
-                if (_childWatcherEnabled)
-                {
-                    _childWatcher.Stop();
-                }
-#endif
                 var output = process.StandardOutput.ReadToEnd();
                 var content = File.ReadAllText(logFileName);
                 var logFileBackup = logFileDir + "\\" + test.FullyQualifiedName + ".log";
