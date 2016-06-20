@@ -15,7 +15,9 @@ namespace ImplemenationCTestTestAdapter
 
         public const string CTestInfoFileName = "CTestTestAdapter.txt";
 
+#if false
         private readonly CTestLogWindow _log;
+#endif
 
         private const string RegexFieldNameNumber = "number";
         private const string RegexFieldNameTestname = "testname";
@@ -30,10 +32,12 @@ namespace ImplemenationCTestTestAdapter
         public CTestInfo()
         {
             _tests = new List<TestInfo>();
+#if false
             _log = new CTestLogWindow()
             {
                 Enabled = true,
             };
+#endif
         }
 
         public bool TestExists(string testname)

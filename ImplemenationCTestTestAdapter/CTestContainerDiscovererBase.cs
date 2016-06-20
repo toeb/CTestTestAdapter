@@ -35,14 +35,16 @@ namespace ImplemenationCTestTestAdapter
                     return _cachedContainers;
                 }
                 var files = FindTestFiles();
+#if false
                 _log.OutputLine("CTestContainerDiscovererBase.initial watcher update => UpdateFileWatcher");
+#endif
                 UpdateFileWatcher(files, true);
                 _initialContainerSearch = false;
                 return _cachedContainers;
             }
         }
 
-        #region Members
+#region Members
 
         protected readonly IServiceProvider ServiceProvider;
         private readonly CTestLogWindow _log;
@@ -53,7 +55,7 @@ namespace ImplemenationCTestTestAdapter
         private readonly ITestFileAddRemoveListener _testFilesAddRemoveListener;
         private readonly ITestFilesUpdateWatcher _testFilesUpdateWatcher;
 
-        #endregion
+#endregion
 
         [ImportingConstructor]
         public CTestContainerDiscovererBase(
@@ -64,7 +66,7 @@ namespace ImplemenationCTestTestAdapter
             ValidateArg.NotNull(serviceProvider, "serviceProvider");
             _log = new CTestLogWindow()
             {
-                Enabled = false,
+                Enabled = true,
                 AutoRaise = false
             };
             ExecutorUriString = executorUri;
@@ -86,11 +88,12 @@ namespace ImplemenationCTestTestAdapter
             _testFilesUpdateWatcher.FileChangedEvent += OnTestContainerFileChanged;
         }
 
-        #region TestContainerHandling
+#region TestContainerHandling
 
         private void UpdateFileWatcher(IEnumerable<string> files, bool isAdd)
         {
             var enumerable = files as IList<string> ?? files.ToList();
+#if false
             _log.OutputLine($"CTestContainerDiscovererBase.UpdateFileWatcher (isadd:{isAdd}, count:{enumerable.Count})");
             foreach (var f in enumerable)
             {
@@ -98,20 +101,25 @@ namespace ImplemenationCTestTestAdapter
             }
             _log.OutputLine(
                 "CTestContainerDiscovererBase.UpdateFileWatcher => CTestContainerDiscovererBase.TestContainersAboutToBeUpdated");
+#endif
             TestContainersAboutToBeUpdated();
             foreach (var file in enumerable)
             {
                 if (isAdd)
                 {
+#if false
                     _log.OutputLine(
                         "CTestContainerDiscovererBase.UpdateFileWatcher => CTestContainerDiscovererBase.AddTestContainerIfTestFile(add)");
+#endif
                     _testFilesUpdateWatcher.AddWatch(file);
                     AddTestContainerIfTestFile(file);
                 }
                 else
                 {
+#if false
                     _log.OutputLine(
                         "CTestContainerDiscovererBase.UpdateFileWatcher => CTestContainerDiscovererBase.AddTestContainerIfTestFile(remove)");
+#endif
                     _testFilesUpdateWatcher.RemoveWatch(file);
                     RemoveTestContainer(file);
                 }
@@ -120,24 +128,32 @@ namespace ImplemenationCTestTestAdapter
 
         private void AddTestContainerIfTestFile(string file)
         {
+#if false
             _log.OutputLine($"CTestContainerDiscovererBase.AddTestContainerIfTestFile: (try) {file}");
+#endif
             var isTestFile = IsTestContainerFile(file);
+#if false
             _log.OutputLine(
                 "CTestContainerDiscovererBase.AddTestContainerIfTestFile => CTestContainerDiscovererBase.RemoveTestContainer");
+#endif
             RemoveTestContainer(file);
             if (!isTestFile)
             {
                 _log.OutputLine($"CTestContainerDiscovererBase.AddTestContainerIfTestFile: not a test file: {file}");
                 return;
             }
+#if false
             _log.OutputLine("CTestContainerDiscovererBase.AddTestContainerIfTestFile: adding container");
+#endif
             var container = GetNewTestContainer(file);
             _cachedContainers.Add(container);
         }
 
         private void RemoveTestContainer(string file)
         {
+#if false
             _log.OutputLine($"CTestContainerDiscovererBase.RemoveTestContainer: (try) {file}");
+#endif
             var index = _cachedContainers.FindIndex(x => x.Source.Equals(file, StringComparison.OrdinalIgnoreCase));
             if (index >= 0)
             {
@@ -155,9 +171,9 @@ namespace ImplemenationCTestTestAdapter
             TestContainersAboutToBeUpdated();
         }
 
-        #endregion
+#endregion
 
-        #region ListenerEvents
+#region ListenerEvents
 
         private void OnSolutionUnloaded(object sender, EventArgs eventArgs)
         {
@@ -237,9 +253,9 @@ namespace ImplemenationCTestTestAdapter
             TestContainersUpdated?.Invoke(this, EventArgs.Empty);
         }
 
-        #endregion
+#endregion
 
-        #region Destructors
+#region Destructors
 
         public void Dispose()
         {
@@ -273,9 +289,9 @@ namespace ImplemenationCTestTestAdapter
             }
         }
 
-        #endregion
+#endregion
 
-        #region VirtualInterface
+#region VirtualInterface
 
         protected virtual bool IsTestContainerFile(string file)
         {
@@ -301,6 +317,6 @@ namespace ImplemenationCTestTestAdapter
         {
         }
 
-        #endregion
+#endregion
     }
 }

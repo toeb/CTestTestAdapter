@@ -30,7 +30,7 @@ namespace ImplemenationCTestTestAdapter
         {
             _log = new CTestLogWindow
             {
-                Enabled = false,
+                Enabled = true,
                 AutoRaise = false
             };
             _buildConfiguration = new BuildConfiguration(serviceProvider);
@@ -88,11 +88,15 @@ namespace ImplemenationCTestTestAdapter
 
         private IEnumerable<string> CollectCTestTestfiles(string currentDir)
         {
+#if false
             _log.OutputLine($"CTestContainerDiscoverer.CollectCTestTestfiles({currentDir})");
+#endif
             var file = new FileInfo(Path.Combine(currentDir, TestFileName + TestFileExtension));
             if (!file.Exists)
             {
+#if false
                 _log.OutputLine("CTestContainerDiscoverer.CollectCTestTestfiles(no file)");
+#endif
                 return Enumerable.Empty<string>();
             }
             var content = file.OpenText().ReadToEnd();
@@ -100,30 +104,40 @@ namespace ImplemenationCTestTestAdapter
             var subdirs = (from Match match in matches select match.Groups["subdir"].Value).ToList();
             if (content.Contains("add_test"))
             {
-                _log.OutputLine("CTestContainerDiscoverer.CollectCTestTestfiles: tests found");
+#if false
+                _log.OutputLine($"CTestContainerDiscoverer.CollectCTestTestfiles: {file.DirectoryName}");
+#endif
                 if (subdirs.Count == 0)
                 {
                     return Enumerable.Repeat(file.FullName, 1);
                 }
                 if (subdirs.Count > 0)
                 {
+#if false
                     _log.OutputLine("CTestContainerDiscoverer.CollectCTestTestfiles: recurse");
+#endif
                     return subdirs
                         .SelectMany(d => CollectCTestTestfiles(Path.Combine(currentDir, d)))
                         .Concat(Enumerable.Repeat(file.FullName, 1));
                 }
             }
+#if false
             _log.OutputLine("CTestContainerDiscoverer.CollectCTestTestfiles: NO tests found");
             _log.OutputLine("CTestContainerDiscoverer.CollectCTestTestfiles: recurse");
+#endif
             return subdirs
                 .SelectMany(d => CollectCTestTestfiles(Path.Combine(currentDir, d)));
         }
 
         protected override IEnumerable<string> FindTestFiles()
         {
+#if false
             _log.OutputLine("CTestContainerDiscoverer.FindTestFiles START");
+#endif
             var res = CollectCTestTestfiles(_cmakeCache.CMakeCacheDir);
+#if false
             _log.OutputLine("CTestContainerDiscoverer.FindTestFiles END");
+#endif
             return res;
         }
 
@@ -137,7 +151,9 @@ namespace ImplemenationCTestTestAdapter
 
         protected override ITestContainer GetNewTestContainer(string s)
         {
+#if false
             _log.OutputLine($"CTestContainerDiscoverer.GetNewTestContainer: (try) \"{s}\"");
+#endif
             return new CTestContainer(this, s);
         }
 

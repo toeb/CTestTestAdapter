@@ -150,13 +150,15 @@ namespace ImplemenationCTestTestAdapter
                     $"CTestExecutor.RunTests: ctest {test.FullyQualifiedName} -C {_buildConfiguration.ConfigurationName}");
                 if (runContext.IsBeingDebugged)
                 {
-//                    process.Start();
+                    process.Start();
+#if false
                     var vars = new System.Collections.Generic.Dictionary<string, string>();
                     frameworkHandle.LaunchProcessWithDebuggerAttached(
                         _cmakeCache.CTestExecutable,
                         _cmakeCache.CMakeCacheDir,
                         args,
                         vars);
+#endif
                 }
                 else
                 {
