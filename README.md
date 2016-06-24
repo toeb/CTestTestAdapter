@@ -1,6 +1,6 @@
 # CTestTestAdapter
 
-A Test Adapter to run [kitware's CMake/CTest](http://cmake.org/) from the Visual Studio (2013/2015) TestExplorer
+A Test Adapter to run [kitware's CMake/CTest](http://cmake.org/) from the Visual Studio (2012/2013/2015) TestExplorer
 
 ## Screenshot
 
@@ -27,7 +27,6 @@ I hope others might want to help developing it as I can't promise to work on it
 
 * ~~More Test MetaData (line number, file, etc)~~
 * More efficient Test Runs
-
 
 ## Issues
 
