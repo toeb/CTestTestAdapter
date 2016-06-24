@@ -6,11 +6,11 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 
-[assembly: AssemblyTitle("CTestTestAdapter")]
+[assembly: AssemblyTitle("CTestTestAdapterVsix")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("CTestTestAdapter")]
+[assembly: AssemblyProduct("CTestTestAdapterVsix")]
 [assembly: AssemblyCopyright("Copyright ©  2014")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -23,7 +23,7 @@ using System.Runtime.InteropServices;
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 
-[assembly: Guid("ee867076-62ee-49db-a6b9-ef7bfede7f9c")]
+[assembly: Guid("ee867076-62ee-49db-a6b9-ef7bfede7f9d")]
 
 // Version information for an assembly consists of the following four values:
 //
