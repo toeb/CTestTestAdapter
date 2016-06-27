@@ -87,9 +87,9 @@ namespace CTestTestAdapter
         {
             if (!_buildConfiguration.HasDte)
             {
-                frameworkHandle.SendMessage(TestMessageLevel.Error,
-                    "CTestExecutor.RunTests: DTE object not found, cannot run tests.");
-                return;
+                frameworkHandle.SendMessage(TestMessageLevel.Warning,
+                    "CTestExecutor.RunTests: DTE object not found, maybe having a problem here.");
+                //return;
             }
             if (!File.Exists(_cmakeCache.CTestExecutable))
             {
