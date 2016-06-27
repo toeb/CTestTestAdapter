@@ -51,13 +51,15 @@ foreach(vs ${VS_VERSIONS})
             )
         set_target_properties(${FINAL_TARGET_NAME}
             PROPERTIES
-            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>${vs}"
+            ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/Ar$<CONFIG>${vs}"
+            LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/Lib$<CONFIG>${vs}"
+            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/Bin$<CONFIG>${vs}"
             )
         if(COPY_VSIX_TO_SOURCE)
             add_custom_command(TARGET ${FINAL_TARGET_NAME} POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_SOURCE_DIR}/dist"
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>${vs}/${FINAL_TARGET_NAME}.vsix" 
+                    "${CMAKE_CURRENT_BINARY_DIR}/Bin$<CONFIG>${vs}/${FINAL_TARGET_NAME}.vsix" 
                     "${CMAKE_SOURCE_DIR}/dist/${FINAL_TARGET_NAME}_${TOOLS_VERSION}.vsix"
                 )
         endif()

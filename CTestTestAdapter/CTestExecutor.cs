@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.Logging;
 
@@ -32,18 +33,20 @@ namespace CTestTestAdapter
         private bool _runningFromSources;
 
         private bool _cancelled;
+        private string _solutionDir;
         private readonly CMakeCache _cmakeCache;
         private readonly BuildConfiguration _buildConfiguration;
         private readonly CTestInfo _ctestInfo;
 
         public CTestExecutor()
         {
-            EnableLogging = false;
+            EnableLogging = true;
             _runningFromSources = false;
             _buildConfiguration = new BuildConfiguration();
+            _solutionDir = _buildConfiguration.SolutionDir;
             _cmakeCache = new CMakeCache
             {
-                CMakeCacheDir = _buildConfiguration.SolutionDir
+                CMakeCacheDir = _solutionDir
             };
             _ctestInfo = new CTestInfo();
         }
@@ -53,8 +56,41 @@ namespace CTestTestAdapter
             _cancelled = true;
         }
 
+        private void TryUpdateCacheDir(string source)
+        {
+            if (_cmakeCache.CMakeCacheDir.Length == 0)
+            {
+                _cmakeCache.CMakeCacheDir =
+                    FindRootOfCTestTestfile(source);
+            }
+        }
+
+        private string FindRootOfCTestTestfile(string file)
+        {
+            while (true)
+            {
+                var info = new FileInfo(file);
+                if (File.Exists(info.DirectoryName + "\\" + _cmakeCache.CMakeCacheFile))
+                {
+                    _solutionDir = info.DirectoryName;
+                    return info.DirectoryName;
+                }
+                if (info.Directory == null)
+                {
+                    return string.Empty;
+                }
+                if (info.Directory.Parent == null)
+                {
+                    return string.Empty;
+                }
+                file = info.Directory.Parent.FullName;
+            }
+        }
+
         public void RunTests(IEnumerable<string> sources, IRunContext runContext, IFrameworkHandle frameworkHandle)
         {
+            var enumerable = sources as IList<string> ?? sources.ToList();
+            TryUpdateCacheDir(enumerable.First());
             _runningFromSources = true;
             frameworkHandle.SendMessage(TestMessageLevel.Informational,
                 "CTestExecutor.RunTests(src)");
@@ -63,14 +99,14 @@ namespace CTestTestAdapter
             var logFileDir = _cmakeCache.CMakeCacheDir + "\\Testing\\Temporary";
             frameworkHandle.SendMessage(TestMessageLevel.Informational,
                 "CTestExecutor.RunTests: logs are written to (file://" + logFileDir + ")");
-            var testInfoFilename = Path.Combine(_buildConfiguration.SolutionDir, CTestInfo.CTestInfoFileName);
+            var testInfoFilename = Path.Combine(_solutionDir, CTestInfo.CTestInfoFileName);
             if (!File.Exists(testInfoFilename))
             {
                 frameworkHandle.SendMessage(TestMessageLevel.Warning,
                     "CTestExecutor.RunTests: didn't find info file:" + testInfoFilename + "");
             }
             _ctestInfo.ReadTestInfoFile(testInfoFilename);
-            foreach (var s in sources)
+            foreach (var s in enumerable)
             {
                 if (EnableLogging)
                 {
@@ -85,6 +121,29 @@ namespace CTestTestAdapter
 
         public void RunTests(IEnumerable<TestCase> tests, IRunContext runContext, IFrameworkHandle frameworkHandle)
         {
+            var testCases = tests as IList<TestCase> ?? tests.ToList();
+            TryUpdateCacheDir(testCases.First().Source);
+            var buildConfiguration = _buildConfiguration.ConfigurationName;
+            if (!buildConfiguration.Any())
+            {
+                // get configuration name from cmake cache, pick first found
+                var typeString = _cmakeCache["CMAKE_CONFIGURATION_TYPES"];
+                var types = typeString.Split(';');
+                if (types.Any())
+                {
+                    buildConfiguration = types.First();
+                }
+            }
+            if (!buildConfiguration.Any())
+            {
+                frameworkHandle.SendMessage(TestMessageLevel.Warning,
+                    "CTestExecutor.RunTests: no build configuration found");
+            }
+            else
+            {
+                frameworkHandle.SendMessage(TestMessageLevel.Warning,
+                    "CTestExecutor.RunTests: configuration: " + buildConfiguration);
+            }
             if (!_buildConfiguration.HasDte)
             {
                 frameworkHandle.SendMessage(TestMessageLevel.Warning,
@@ -117,7 +176,7 @@ namespace CTestTestAdapter
                     "CTestExecutor.RunTests: logs are written to (file://" + logFileDir + ")");
             }
             // run test cases
-            foreach (var test in tests)
+            foreach (var test in testCases)
             {
                 if (_cancelled)
                 {
@@ -125,7 +184,10 @@ namespace CTestTestAdapter
                 }
                 // verify we have a run directory and a ctest executable
                 var args = "-R \"^" + test.FullyQualifiedName + "$\"";
-                args += " -C \"" + _buildConfiguration.ConfigurationName + "\"";
+                if (buildConfiguration.Any())
+                {
+                    args += " -C \"" + buildConfiguration + "\"";
+                }
                 var startInfo = new ProcessStartInfo
                 {
                     Arguments = args,
@@ -146,9 +208,12 @@ namespace CTestTestAdapter
                 {
                     File.Delete(logFileName);
                 }
-                frameworkHandle.SendMessage(TestMessageLevel.Informational,
-                    "CTestExecutor.RunTests: ctest " + test.FullyQualifiedName + " -C " +
-                    _buildConfiguration.ConfigurationName);
+                var logMsg = "CTestExecutor.RunTests: ctest " + test.FullyQualifiedName;
+                if (buildConfiguration.Any())
+                {
+                    logMsg += " -C " + buildConfiguration;
+                }
+                frameworkHandle.SendMessage(TestMessageLevel.Informational, logMsg);
                 if (runContext.IsBeingDebugged)
                 {
                     process.Start();
@@ -167,13 +232,31 @@ namespace CTestTestAdapter
                 }
                 process.WaitForExit();
                 var output = process.StandardOutput.ReadToEnd();
+                if (!File.Exists(logFileName))
+                {
+                    frameworkHandle.SendMessage(TestMessageLevel.Warning, "logfile not found: "
+                                                                          + logFileName);
+                }
                 var content = File.ReadAllText(logFileName);
+                if (content.Any())
+                {
+                    frameworkHandle.SendMessage(TestMessageLevel.Informational, "logfile:\n" + content);
+                }
                 var logFileBackup = logFileDir + "\\" + test.FullyQualifiedName + ".log";
                 File.Copy(logFileName, logFileBackup, true);
                 var matchesDuration = RegexDuration.Match(content);
-                var timeSpan = TimeSpan.FromSeconds(
-                    double.Parse(matchesDuration.Groups[RegexFieldDuration].Value,
-                        System.Globalization.CultureInfo.InvariantCulture.NumberFormat));
+                var timeSpan = new TimeSpan();
+                if (matchesDuration.Success)
+                {
+                    timeSpan = TimeSpan.FromSeconds(
+                        double.Parse(matchesDuration.Groups[RegexFieldDuration].Value,
+                            System.Globalization.CultureInfo.InvariantCulture.NumberFormat));
+                }
+                else
+                {
+                    frameworkHandle.SendMessage(TestMessageLevel.Warning,
+                        "CTestExecutor.RunTests: could not get runtime of test " + test.FullyQualifiedName);
+                }
                 var testResult = new TestResult(test)
                 {
                     ComputerName = Environment.MachineName,

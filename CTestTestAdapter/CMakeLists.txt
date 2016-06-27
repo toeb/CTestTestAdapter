@@ -64,6 +64,8 @@ foreach(vs ${VS_VERSIONS})
             )
         set_target_properties(${ADAPTER_NAME}_VS${vs}
             PROPERTIES
+            ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/Ar$<CONFIG>${vs}"
+            LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/Lib$<CONFIG>${vs}"
             RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>${vs}"
             )
     else()

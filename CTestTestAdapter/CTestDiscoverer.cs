@@ -82,7 +82,7 @@ namespace CTestTestAdapter
                     {
                         log.SendMessage(TestMessageLevel.Warning,
                             "CTestDiscoverer.ParseTestContainerFile: test not listed by ctest -N :" + testname);
-                        continue;
+                        //continue;
                     }
                     if (cases.ContainsKey(testname))
                     {
