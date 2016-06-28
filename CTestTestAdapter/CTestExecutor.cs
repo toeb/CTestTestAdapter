@@ -56,41 +56,46 @@ namespace CTestTestAdapter
             _cancelled = true;
         }
 
-        private void TryUpdateCacheDir(string source)
+        private void TryUpdateCacheDir(string source, IMessageLogger log)
         {
-            if (_cmakeCache.CMakeCacheDir.Length == 0)
+            if (_cmakeCache.CMakeCacheDir.Length != 0)
+            {
+                return;
+            }
+            var info = new FileInfo(source);
+            if (info.Exists)
             {
                 _cmakeCache.CMakeCacheDir =
-                    FindRootOfCTestTestfile(source);
+                    FindRootOfCTestTestfile(info.DirectoryName, log);
             }
         }
 
-        private string FindRootOfCTestTestfile(string file)
+        private string FindRootOfCTestTestfile(string directory, IMessageLogger log)
         {
             while (true)
             {
-                var info = new FileInfo(file);
-                if (File.Exists(info.DirectoryName + "\\" + _cmakeCache.CMakeCacheFile))
+                var info = new DirectoryInfo(directory);
+                if (File.Exists(info.FullName + "\\" + _cmakeCache.CMakeCacheFile))
                 {
-                    _solutionDir = info.DirectoryName;
-                    return info.DirectoryName;
+                    _solutionDir = info.FullName;
+                    return info.FullName;
                 }
-                if (info.Directory == null)
-                {
-                    return string.Empty;
-                }
-                if (info.Directory.Parent == null)
+                if (!info.Exists)
                 {
                     return string.Empty;
                 }
-                file = info.Directory.Parent.FullName;
+                if (info.Parent == null)
+                {
+                    return string.Empty;
+                }
+                directory = info.Parent.FullName;
             }
         }
 
         public void RunTests(IEnumerable<string> sources, IRunContext runContext, IFrameworkHandle frameworkHandle)
         {
             var enumerable = sources as IList<string> ?? sources.ToList();
-            TryUpdateCacheDir(enumerable.First());
+            TryUpdateCacheDir(enumerable.First(), frameworkHandle);
             _runningFromSources = true;
             frameworkHandle.SendMessage(TestMessageLevel.Informational,
                 "CTestExecutor.RunTests(src)");
@@ -102,17 +107,14 @@ namespace CTestTestAdapter
             var testInfoFilename = Path.Combine(_solutionDir, CTestInfo.CTestInfoFileName);
             if (!File.Exists(testInfoFilename))
             {
+                /*
                 frameworkHandle.SendMessage(TestMessageLevel.Warning,
                     "CTestExecutor.RunTests: didn't find info file:" + testInfoFilename + "");
+                */
             }
             _ctestInfo.ReadTestInfoFile(testInfoFilename);
             foreach (var s in enumerable)
             {
-                if (EnableLogging)
-                {
-                    frameworkHandle.SendMessage(TestMessageLevel.Informational,
-                        "CTestExecutor.RunTests(src) => CTestDiscoverer.ParseTestContainerFile(" + s + ")");
-                }
                 var cases = CTestDiscoverer.ParseTestContainerFile(s, frameworkHandle, EnableLogging, _ctestInfo);
                 RunTests(cases.Values, runContext, frameworkHandle);
             }
@@ -122,7 +124,11 @@ namespace CTestTestAdapter
         public void RunTests(IEnumerable<TestCase> tests, IRunContext runContext, IFrameworkHandle frameworkHandle)
         {
             var testCases = tests as IList<TestCase> ?? tests.ToList();
-            TryUpdateCacheDir(testCases.First().Source);
+            if (!testCases.Any())
+            {
+                return;
+            }
+            TryUpdateCacheDir(testCases.First().Source, frameworkHandle);
             var buildConfiguration = _buildConfiguration.ConfigurationName;
             if (!buildConfiguration.Any())
             {
@@ -132,6 +138,8 @@ namespace CTestTestAdapter
                 if (types.Any())
                 {
                     buildConfiguration = types.First();
+                    frameworkHandle.SendMessage(TestMessageLevel.Warning,
+                        "CTestExecutor.RunTests: configuration fallback to: " + buildConfiguration);
                 }
             }
             if (!buildConfiguration.Any())
@@ -139,12 +147,7 @@ namespace CTestTestAdapter
                 frameworkHandle.SendMessage(TestMessageLevel.Warning,
                     "CTestExecutor.RunTests: no build configuration found");
             }
-            else
-            {
-                frameworkHandle.SendMessage(TestMessageLevel.Warning,
-                    "CTestExecutor.RunTests: configuration: " + buildConfiguration);
-            }
-            if (!_buildConfiguration.HasDte)
+            if (!_buildConfiguration.HasDte && _ctestInfo.FileRead)
             {
                 frameworkHandle.SendMessage(TestMessageLevel.Warning,
                     "CTestExecutor.RunTests: DTE object not found, maybe having a problem here.");
@@ -238,10 +241,6 @@ namespace CTestTestAdapter
                                                                           + logFileName);
                 }
                 var content = File.ReadAllText(logFileName);
-                if (content.Any())
-                {
-                    frameworkHandle.SendMessage(TestMessageLevel.Informational, "logfile:\n" + content);
-                }
                 var logFileBackup = logFileDir + "\\" + test.FullyQualifiedName + ".log";
                 File.Copy(logFileName, logFileBackup, true);
                 var matchesDuration = RegexDuration.Match(content);

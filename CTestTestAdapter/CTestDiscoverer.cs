@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.Logging;
 
@@ -78,11 +79,10 @@ namespace CTestTestAdapter
                         continue;
                     }
                     var testname = m.Groups[FieldNameTestname].Value;
-                    if (!info.TestExists(testname))
+                    if (info.FileRead && !info.TestExists(testname))
                     {
                         log.SendMessage(TestMessageLevel.Warning,
                             "CTestDiscoverer.ParseTestContainerFile: test not listed by ctest -N :" + testname);
-                        //continue;
                     }
                     if (cases.ContainsKey(testname))
                     {
@@ -94,7 +94,10 @@ namespace CTestTestAdapter
                         DisplayName = testname,
                         LineNumber = lineNumber,
                     };
-                    testcase.DisplayName = info[testname].Number.ToString().PadLeft(3, '0') + ": " + testname;
+                    if (info.TestExists(testname))
+                    {
+                        testcase.DisplayName = info[testname].Number.ToString().PadLeft(3, '0') + ": " + testname;
+                    }
                     var isExe = IsExeRegex.Match(line);
                     cases.Add(testname, testcase);
                 }

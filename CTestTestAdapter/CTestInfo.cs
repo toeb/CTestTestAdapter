@@ -24,9 +24,11 @@ namespace CTestTestAdapter
         private static readonly Regex LinesRegex = new Regex(@"v:\d+");
 
         private readonly List<TestInfo> _tests;
+        private bool _fileRead;
 
         public CTestInfo()
         {
+            _fileRead = false;
             _tests = new List<TestInfo>();
         }
 
@@ -57,6 +59,11 @@ namespace CTestTestAdapter
             get { return _tests; }
         }
 
+        public bool FileRead
+        {
+            get { return _fileRead; }
+        }
+
         public void ReadTestInfoFile(string fileName)
         {
             _tests.Clear();
@@ -84,6 +91,7 @@ namespace CTestTestAdapter
                 };
                 _tests.Add(info);
             }
+            _fileRead = true;
             str.Close();
         }
 
