@@ -101,24 +101,21 @@ namespace CTestTestAdapter
             {
                 return Enumerable.Empty<string>();
             }
+            var res = new List<string>();
             var content = file.OpenText().ReadToEnd();
             var matches = Regex.Matches(content, @".*[sS][uB][bB][dD][iI][rR][sS]\s*\((?<subdir>.*)\)");
             var subdirs = (from Match match in matches select match.Groups["subdir"].Value).ToList();
             if (content.Contains("add_test"))
             {
-                if (subdirs.Count == 0)
-                {
-                    return Enumerable.Repeat(file.FullName, 1);
-                }
-                if (subdirs.Count > 0)
-                {
-                    return subdirs
-                        .SelectMany(d => CollectCTestTestfiles(Path.Combine(currentDir, d)))
-                        .Concat(Enumerable.Repeat(file.FullName, 1));
-                }
+                res.Add(file.FullName);
             }
-            return subdirs
-                .SelectMany(d => CollectCTestTestfiles(Path.Combine(currentDir, d)));
+            foreach (var dir in subdirs)
+            {
+                var subpath = dir.Trim('\"');
+                subpath = Path.Combine(currentDir, subpath);
+                res.AddRange(CollectCTestTestfiles(subpath));
+            }
+            return res;
         }
 
         protected override IEnumerable<string> FindTestFiles()
