@@ -34,9 +34,8 @@ if(EXISTS ${VC_TEST_WINDOW_PATH14})
     set(VS14_EXISTS TRUE)
 endif()
 
-set(PROPERTIES
-	VS_GLOBAL_Platform "AnyCPU"
-    )
+#set(PROPERTIES VS_GLOBAL_Platform "AnyCPU")
+
 set(CS_COMPILE_OPTIONS
     "/langversion:4"
     "/platform:anycpu"
@@ -48,9 +47,7 @@ set(ADAPTER_NAME CTestTestAdapter)
 
 # Function to configure a C# project for a single version of Visual Studio.
 function(add_csharp_project TARGET_NAME VS_VERSION DOTNET_VERSION ROOT_NAMESPACE)
-    cmake_parse_arguments(ARG 
-        "VSIX" 
-        "" 
+    cmake_parse_arguments(ARG "VSIX" "" 
         "SOURCES;REFERENCES;TESTWINDOW_REFERENCES;COMPILE_OPTIONS;LINK_LIBRARIES;PROPERTIES" 
         ${ARGN})
     set(FINAL_TARGET_NAME ${TARGET_NAME})

@@ -10,8 +10,6 @@ set_source_files_properties(
     VS_INCLUDE_IN_VSIX "true"
     )
 set(PROPERTIES_VSIX
-    VS_GLOBAL_VSToolsPath "$(MSBuildExtensionsPath32)/Microsoft/VisualStudio/v${TOOLS_VERSION}"
-    VS_CUSTOM_TARGETS "$(VSToolsPath)\\VSSDK\\Microsoft.VsSDK.targets"
     VS_GLOBAL_PublishUrl "publish\\"
 	VS_GLOBAL_Install "true"
 	VS_GLOBAL_InstallFrom "Disk"
@@ -55,6 +53,10 @@ foreach(vs ${VS_VERSIONS})
             LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/Lib$<CONFIG>${vs}"
             RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/Bin$<CONFIG>${vs}"
             )
+        set(vssdk_targets_file_subpath "Microsoft/VisualStudio/v${TOOLS_VERSION}/VSSDK/Microsoft.VsSDK.targets")   
+        set(targets_file "$ENV{ProgramFiles\(x86\)}/MSBuild/${vssdk_targets_file_subpath}")
+        file(TO_CMAKE_PATH "${targets_file}" targets_file)
+        target_link_libraries(${FINAL_TARGET_NAME} "${targets_file}")
         if(COPY_VSIX_TO_SOURCE)
             add_custom_command(TARGET ${FINAL_TARGET_NAME} POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_SOURCE_DIR}/dist"
