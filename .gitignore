@@ -203,3 +203,8 @@ CMakeFiles
 /dist/CTestTestAdapterVsix_VS12_14.0
 /dist/CTestTestAdapterVsix_VS14_14.0
 /dist/CTestTestAdapterVsix_VS11_12.0
+
+/vs11
+/vs12
+/vs14
+/vs15
