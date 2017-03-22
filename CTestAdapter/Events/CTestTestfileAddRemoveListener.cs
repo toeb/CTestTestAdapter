@@ -2,7 +2,7 @@ using System;
 using System.ComponentModel.Composition;
 using System.IO;
 
-namespace CTestTestAdapter.Events
+namespace CTestAdapter.Events
 {
     [Export(typeof(ITestFileAddRemoveListener))]
     public sealed class CTestTestfileAddRemoveListener : IDisposable,

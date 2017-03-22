@@ -5,7 +5,7 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 
-namespace CTestTestAdapter.Events
+namespace CTestAdapter.Events
 {
     [Export(typeof(ITestFileAddRemoveListener))]
     public sealed class ProjectItemAddRemoveListener : IVsTrackProjectDocumentsEvents2, IDisposable,

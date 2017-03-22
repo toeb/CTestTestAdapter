@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text.RegularExpressions;
 
-namespace CTestTestAdapter
+namespace CTestAdapter
 {
     /// <remarks>
     ///  Taken from here: https://github.com/getgauge/gauge-visualstudio/blob/master/Gauge.VisualStudio/Helpers/DteHelper.cs

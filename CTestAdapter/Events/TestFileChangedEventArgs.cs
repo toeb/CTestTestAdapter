@@ -1,4 +1,4 @@
-namespace CTestTestAdapter.Events
+namespace CTestAdapter.Events
 {
     public enum TestFileChangedReason
     {

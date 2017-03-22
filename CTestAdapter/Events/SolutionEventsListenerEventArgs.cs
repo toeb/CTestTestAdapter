@@ -1,6 +1,6 @@
 using Microsoft.VisualStudio.Shell.Interop;
 
-namespace CTestTestAdapter.Events
+namespace CTestAdapter.Events
 {
     public enum SolutionChangedReason
     {

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Management;
 
-namespace CTestTestAdapter
+namespace CTestAdapter
 {
     public static class ProcessExtensions
     {

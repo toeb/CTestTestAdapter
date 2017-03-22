@@ -5,10 +5,10 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
-using CTestTestAdapter.Events;
+using CTestAdapter.Events;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 
-namespace CTestTestAdapter
+namespace CTestAdapter
 {
     public class CTestContainerDiscovererBase : ITestContainerDiscoverer
     {

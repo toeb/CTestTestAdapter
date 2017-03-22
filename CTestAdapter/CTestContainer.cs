@@ -4,7 +4,7 @@ using Microsoft.VisualStudio.TestWindow.Extensibility;
 using System;
 using System.Collections.Generic;
 
-namespace CTestTestAdapter
+namespace CTestAdapter
 {
     /// <summary>
     /// A CTestContainer 

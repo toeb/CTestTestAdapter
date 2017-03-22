@@ -9,9 +9,10 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.Logging;
 
-namespace CTestTestAdapter
+namespace CTestAdapter
 {
     [FileExtension(".cmake")]
+    [FileExtension(".dll")]
     [DefaultExecutorUri(CTestExecutor.ExecutorUriString)]
     [Export(typeof(ITestDiscoverer))]
     public class CTestDiscoverer : ITestDiscoverer

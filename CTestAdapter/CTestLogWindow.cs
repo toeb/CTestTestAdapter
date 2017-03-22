@@ -2,7 +2,7 @@
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 
-namespace CTestTestAdapter
+namespace CTestAdapter
 {
     internal class CTestLogWindow
     {

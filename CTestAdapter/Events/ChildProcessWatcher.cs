@@ -7,7 +7,7 @@ using System.Management;
 using System.Runtime.InteropServices;
 using System.Linq;
 
-namespace CTestTestAdapter.Events
+namespace CTestAdapter.Events
 {
     public class ChildProcessWatcher : IDisposable
     {

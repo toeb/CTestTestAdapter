@@ -7,9 +7,9 @@ using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using CTestTestAdapter.Events;
+using CTestAdapter.Events;
 
-namespace CTestTestAdapter
+namespace CTestAdapter
 {
     [Export(typeof(ITestContainerDiscoverer))]
     public class CTestContainerDiscoverer : CTestContainerDiscovererBase

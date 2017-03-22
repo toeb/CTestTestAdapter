@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 
-namespace CTestTestAdapter.Events
+namespace CTestAdapter.Events
 {
     [Export(typeof(ITestFilesUpdateWatcher))]
     class TestFilesWatcher : IDisposable, ITestFilesUpdateWatcher

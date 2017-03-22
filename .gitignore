@@ -181,7 +181,6 @@ UpgradeLog*.htm
 
 # Microsoft Fakes
 FakesAssemblies/
-/CTestTestAdapter.vsix
 
 CMakeFiles
 /CMakeCache.txt
@@ -198,11 +197,6 @@ CMakeFiles
 /SampleProject/build11
 /SampleProject/build12
 /SampleProject/build14
-/dist/CTestTestAdapterVsix_VS11_14.0
-/dist/CTestTestAdapterVsix_VS12_12.0
-/dist/CTestTestAdapterVsix_VS12_14.0
-/dist/CTestTestAdapterVsix_VS14_14.0
-/dist/CTestTestAdapterVsix_VS11_12.0
 
 /vs11
 /vs12

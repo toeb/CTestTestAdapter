@@ -4,7 +4,7 @@ using System.IO;
 using EnvDTE;
 using Microsoft.VisualStudio.Shell;
 
-namespace CTestTestAdapter
+namespace CTestAdapter
 {
     public class BuildConfiguration
     {

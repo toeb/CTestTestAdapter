@@ -1,6 +1,6 @@
 using System;
 
-namespace CTestTestAdapter.Events
+namespace CTestAdapter.Events
 {
     public interface ITestFileAddRemoveListener
     {

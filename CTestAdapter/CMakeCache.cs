@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.Adapter;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.Logging;
 
-namespace CTestTestAdapter
+namespace CTestAdapter
 {
     public class CMakeCache
     {

@@ -2,7 +2,7 @@
 using System.IO;
 using System.Text.RegularExpressions;
 
-namespace CTestTestAdapter
+namespace CTestAdapter
 {
     public class CTestTestCollector
     {
