@@ -189,6 +189,15 @@ set_target_properties(CTestAdapter
   ${CTEST_ADAPTER_HINT_REFERENCES}
   )
 
+set(FORCE_TAG ForceIncludeInVSIX)
+set(FORCE_VAL true)
+
+foreach(ref ${VSPACKAGE_REFERENCES})  
+  set_target_properties(CTestAdapter
+    PROPERTIES
+    VS_DOTNET_REFERENCEPROP_${ref}_TAG_${FORCE_TAG} ${FORCE_VAL})
+endforeach()
+
 # find Microsoft.VsDSK.targets and "link" to it
 set(VsSdkTargetsFileSubPath
   "Microsoft/VisualStudio/v${MSBUILD_VERSION}/VSSDK/Microsoft.VsSDK.targets")
