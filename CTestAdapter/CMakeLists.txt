@@ -46,7 +46,6 @@ set(VSPACKAGE_REFERENCES
   Microsoft.CSharp
   Microsoft.VisualStudio.CommandBars
   Microsoft.VisualStudio.CoreUtility
-  Microsoft.VisualStudio.Imaging
   Microsoft.VisualStudio.OLE.Interop
   Microsoft.VisualStudio.Shell.${VS_VERSION}.0
   Microsoft.VisualStudio.Shell.Interop
@@ -58,7 +57,6 @@ set(VSPACKAGE_REFERENCES
   Microsoft.VisualStudio.TextManager.Interop
   Microsoft.VisualStudio.TextManager.Interop.8.0
   Microsoft.VisualStudio.Threading
-  Microsoft.VisualStudio.Utilities
   Microsoft.VisualStudio.Validation
   stdole
   System
@@ -72,8 +70,14 @@ set(VSPACKAGE_REFERENCES
 if(${VS_VERSION} EQUAL 11)
 elseif(${VS_VERSION} EQUAL 12)
 elseif(${VS_VERSION} EQUAL 14)
+  list(APPEND VSPACKAGE_REFERENCES
+    Microsoft.VisualStudio.Imaging
+    Microsoft.VisualStudio.Utilities
+    )
 elseif(${VS_VERSION} EQUAL 15)
   list(APPEND VSPACKAGE_REFERENCES
+    Microsoft.VisualStudio.Imaging
+    Microsoft.VisualStudio.Utilities
     Microsoft.VisualStudio.Shell.Framework
     )
 else()
