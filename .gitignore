@@ -181,4 +181,24 @@ UpgradeLog*.htm
 
 # Microsoft Fakes
 FakesAssemblies/
-/CTestTestAdapter.vsix
+
+CMakeFiles
+/CMakeCache.txt
+/*.vcxproj
+*.filters
+*.cmake
+*.csproj
+*.sln
+*.db
+*.opendb
+*.vsix
+/log.xml
+/ActivityLog.xsl
+/SampleProject/build11
+/SampleProject/build12
+/SampleProject/build14
+
+/vs11
+/vs12
+/vs14
+/vs15

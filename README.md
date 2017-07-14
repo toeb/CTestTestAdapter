@@ -1,44 +1,69 @@
-# CTestTestAdapter
+# CTestAdapter
 
-A Test Adapter to run [kitware's CMake/CTest](http://cmake.org/) from the Visual Studio (2013/2015) TestExplorer
+This Visual Studio extension provides a test adapter to run [kitware's CMake/CTest](http://cmake.org/) from the Visual Studio (2012/2013/2015/2017) Test Explorer.
 
-## Screenshot
+## Credits
 
-![screenshot](https://github.com/toeb/CTestTestAdapter/blob/master/screenshot.png)
+CTestAdapter is based on [CTestTestAdapter](https://github.com/toeb/CTestTestAdapter) from Tobias Becker.
 
 ## Features
 
-* Discovers all tests which are visable in your CMakeLists.txt by running `ctest -N` in your binary_dir (i.e. the directory where your .sln file is)
+* Discovers all tests which are added to your software using `add_test()` in your CMake scripts. 
+* Discovers the correct CMake and CTest binary from the `CMakeCache.txt` in your solution directory.
 * Control of test execution through Test Explorer Window
 * Success or Fail based on Outcome of ctest run
 * Shows console output of test if test fails
-* Shows source line where test is executed in CTestTestfile.cmake
+* Shows source line where test is executed in `CTestTestfile.cmake`
 * Allows debugging of tests
-  * Visual Studio may take a few moments to attach itself to the executed program
+  * You need the **[Microsoft Child Process Debugging Power Tool](https://marketplace.visualstudio.com/items?itemName=GreggMiskelly.MicrosoftChildProcessDebuggingPowerTool)** from Gregg Miskelly for attaching to the child processes which are spawned by ctest
 
-## Disclaimer
+![screenshot](CTestAdapter/screenshot.png)  
 
-This software is currently not in its finished state, It still needs alot of polishing because it is slow and not tested.
-It is currently more of a proof of concept than anything else.
+----
 
-I hope others might want to help developing it as I can't promise to work on it
+## Building
 
-## Future
+Building and Testing/Debugging CTestAdapter is very easy using the prepared generation scripts.
 
-* ~~More Test MetaData (line number, file, etc)~~
-* More efficient Test Runs
+### Requirements
 
+* Visual Studio 2012/2013/2015/2017 (depending on the version for which you want to build the extension)
+* CMake 3.8.0 or later (for C# support)
+
+### Build the software
+
+* Depending on the Visual Studio version you want to target run one of the batch scripts:
+  * [SetupVs2012.bat](SetupVs2012.bat)
+  * [SetupVs2013.bat](SetupVs2013.bat)
+  * [SetupVs2015.bat](SetupVs2015.bat)
+  * [SetupVs2017.bat](SetupVs2017.bat)
+
+* There will be binary directories generated where you can find the CTestAdapter.sln solution
+  * vs11 (for Visual Studio 2012)
+  * vs12 (for Visual Studio 2013)
+  * vs14 (for Visual Studio 2015)
+  * vs15 (for Visual Studio 2017)
+
+* Build the software
+* after building, the generated `.vsix` extension will be placed in the binary directory
+  * **CTestAdapter-Debug.vsix** (for debug mode)
+  * **CTestAdapter-Release.vsix** (for release mode)
+  
+### Debug the software
+
+In the generated solution, the startup project is already set to CTestAdapter, along with all necessary paramters to debug the extension straight away. Just start *CTestAdapter* in the debgger and verify the tests from the sample project are shown and can be executed.
+
+### Troubleshooting debugging
+
+In some situations it can happen, that the built extension cannot be deployed to the experimental hive of Visual Studio. If this happens, the complete experimental configuration can be deleted to ensure a clean environment when starting the debugger.
+
+* Run [ClearExperimentalHive.bat](ClearExperimentalHive.bat) to clear all experimental configurations of all Visual Studio versions
 
 ## Issues
 
-if you are missing dependencies:  
-* Install the Visual Studio SDK and the 
-* other Dependencies can be found in `C:\Program Files (x86)\Microsoft Visual Studio 12.0\Common7\IDE\CommonExtensions\Microsoft\TestWindow\`
+* Support for Visual Studio 2017 does not work until now. Test containers are discovered but the test discoverer does not seem to be instantiated at all
+* re-configuring the solution with cmake can lead to crashes of Visual Studio, probably because of concurrent access to `CTestTest.cmake` files
 
-## Example
-
-See simple example in SampleProject CMake/CTest/C++ Project
-
+----
 
 *note*:  The CMake logo belongs to kitware and is under the Creative Commons license.
-
