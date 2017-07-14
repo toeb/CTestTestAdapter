@@ -242,6 +242,12 @@ namespace CTestAdapter
                 }
                 var content = File.ReadAllText(logFileName);
                 var logFileBackup = logFileDir + "\\" + test.FullyQualifiedName + ".log";
+                var invalidChars = new string(Path.GetInvalidFileNameChars()) +
+                  new string(Path.GetInvalidPathChars());
+                foreach(char c in logFileBackup)
+                {
+                  logFileBackup = logFileBackup.Replace(c.ToString(), "_");
+                }
                 File.Copy(logFileName, logFileBackup, true);
                 var matchesDuration = RegexDuration.Match(content);
                 var timeSpan = new TimeSpan();
