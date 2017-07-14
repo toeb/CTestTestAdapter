@@ -241,13 +241,14 @@ namespace CTestAdapter
                                                                           + logFileName);
                 }
                 var content = File.ReadAllText(logFileName);
-                var logFileBackup = logFileDir + "\\" + test.FullyQualifiedName + ".log";
+                var logFileBackup = test.FullyQualifiedName + ".log";
                 var invalidChars = new string(Path.GetInvalidFileNameChars()) +
                   new string(Path.GetInvalidPathChars());
-                foreach(char c in logFileBackup)
+                foreach(char c in invalidChars)
                 {
                   logFileBackup = logFileBackup.Replace(c.ToString(), "_");
                 }
+                logFileBackup = logFileDir + "\\" + logFileBackup;
                 File.Copy(logFileName, logFileBackup, true);
                 var matchesDuration = RegexDuration.Match(content);
                 var timeSpan = new TimeSpan();
