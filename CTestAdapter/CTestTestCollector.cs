@@ -10,7 +10,7 @@ namespace CTestAdapter
         private const string FieldNameTestname = "testname";
 
         private static readonly Regex TestRegex =
-            new Regex(@".*#(?<" + FieldNameNumber + ">[1-9][0-9]*): *(?<" + FieldNameTestname + @">[\w-\.]+).*");
+            new Regex(@".*#(?<" + FieldNameNumber + ">[1-9][0-9]*): *(?<" + FieldNameTestname + @">[\w-\.:]+).*");
 
         public string CTestExecutable { get; set; }
 

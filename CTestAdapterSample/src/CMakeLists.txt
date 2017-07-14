@@ -9,3 +9,6 @@ set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT main)
 add_executable(main main.cpp)
 
 add_test(main main)
+
+add_test(NAME "special:main"
+  COMMAND main)
