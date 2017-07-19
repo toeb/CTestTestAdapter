@@ -1,4 +1,7 @@
 # CTestTestAdapter
+## Developement moved to [https://github.com/micst/CTestTestAdapter](https://github.com/micst/CTestTestAdapter)
+
+Since [micst](https://github.com/micst/) is the primary developer / maintainer now his repository is the master. 
 
 A Test Adapter to run [kitware's CMake/CTest](http://cmake.org/) from the Visual Studio (2013/2015) TestExplorer
 
