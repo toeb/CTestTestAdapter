@@ -151,7 +151,6 @@ namespace CTestAdapter
       {
         frameworkHandle.SendMessage(TestMessageLevel.Warning,
             "CTestExecutor.RunTests: DTE object not found, maybe having a problem here.");
-        //return;
       }
       if (!File.Exists(_cmakeCache.CTestExecutable))
       {
@@ -219,15 +218,8 @@ namespace CTestAdapter
         frameworkHandle.SendMessage(TestMessageLevel.Informational, logMsg);
         if (runContext.IsBeingDebugged)
         {
+          /// @todo check if child process debugging is available?!?
           process.Start();
-#if false
-                    var vars = new System.Collections.Generic.Dictionary<string, string>();
-                    frameworkHandle.LaunchProcessWithDebuggerAttached(
-                        _cmakeCache.CTestExecutable,
-                        _cmakeCache.CMakeCacheDir,
-                        args,
-                        vars);
-#endif
         }
         else
         {
