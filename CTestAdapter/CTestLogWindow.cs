@@ -22,7 +22,7 @@ namespace CTestAdapter
       if (null != outWindow)
       {
         outWindow.CreatePane(ref _outWindowGuid, OutWindowTitle, 1, 1);
-        outWindow.GetPane(ref _outWindowGuid, out _outWindowPane);
+        outWindow.GetPane(ref _outWindowGuid, out this._outWindowPane);
       }
     }
 
@@ -41,21 +41,21 @@ namespace CTestAdapter
       {
         return;
       }
-      if (null != _outWindowPane)
+      if (null != this._outWindowPane)
       {
-        _outWindowPane.OutputString(line);
+        this._outWindowPane.OutputString(line);
         if (AutoRaise)
         {
-          _outWindowPane.Activate();
+          this._outWindowPane.Activate();
         }
       }
     }
 
     public void Activate()
     {
-      if (null != _outWindowPane)
+      if (null != this._outWindowPane)
       {
-        _outWindowPane.Activate();
+        this._outWindowPane.Activate();
       }
     }
   }

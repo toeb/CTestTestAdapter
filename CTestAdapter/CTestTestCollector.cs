@@ -10,7 +10,9 @@ namespace CTestAdapter
     private const string FieldNameTestname = "testname";
 
     private static readonly Regex TestRegex =
-        new Regex(@".*#(?<" + FieldNameNumber + ">[1-9][0-9]*): *(?<" + FieldNameTestname + @">[\w-\.:]+).*");
+        new Regex(@".*#(?<" + CTestTestCollector.FieldNameNumber + 
+          ">[1-9][0-9]*): *(?<" + CTestTestCollector.FieldNameTestname + 
+          @">[\w-\.:]+).*");
 
     public string CTestExecutable { get; set; }
 
@@ -22,32 +24,32 @@ namespace CTestAdapter
 
     public CTestTestCollector()
     {
-      CTestArguments = " -N ";
+      this.CTestArguments = " -N ";
     }
 
     public void CollectTestCases(CTestInfo info)
     {
       info.Tests.Clear();
-      if (!File.Exists(CTestExecutable))
+      if (!File.Exists(this.CTestExecutable))
       {
         return;
       }
-      if (!Directory.Exists(CTestWorkingDir))
+      if (!Directory.Exists(this.CTestWorkingDir))
       {
         return;
       }
-      var args = CTestArguments;
-      if (!string.IsNullOrWhiteSpace(CurrentActiveConfig))
+      var args = this.CTestArguments;
+      if (!string.IsNullOrWhiteSpace(this.CurrentActiveConfig))
       {
         args += " -C ";
-        args += CurrentActiveConfig;
+        args += this.CurrentActiveConfig;
       }
       var proc = new Process
       {
         StartInfo = new ProcessStartInfo()
         {
-          FileName = CTestExecutable,
-          WorkingDirectory = CTestWorkingDir,
+          FileName = this.CTestExecutable,
+          WorkingDirectory = this.CTestWorkingDir,
           Arguments = args,
           CreateNoWindow = true,
           RedirectStandardError = true,

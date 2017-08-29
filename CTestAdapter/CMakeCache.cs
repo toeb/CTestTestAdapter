@@ -41,11 +41,11 @@ namespace CTestAdapter
 
     public string CMakeCacheFile
     {
-      get { return _cmakeCacheFile; }
+      get { return this._cmakeCacheFile; }
       set
       {
-        _cmakeCacheFile = value;
-        StartWatching();
+        this._cmakeCacheFile = value;
+        this.StartWatching();
       }
     }
 
@@ -54,8 +54,8 @@ namespace CTestAdapter
       get { return _cmakeCacheDir; }
       set
       {
-        _cmakeCacheDir = value;
-        StartWatching();
+        this._cmakeCacheDir = value;
+        this.StartWatching();
       }
     }
 
@@ -66,70 +66,71 @@ namespace CTestAdapter
 
     public string this[string name]
     {
-      get { return _cacheEntries.TryGetValue(name, out _tmpEntry) ? _tmpEntry.Value : string.Empty; }
+      get { return this._cacheEntries.TryGetValue(name, out this._tmpEntry) ?
+          this._tmpEntry.Value : string.Empty; }
     }
 
     public void StartWatching()
     {
-      if (!Directory.Exists(_cmakeCacheDir))
+      if (!Directory.Exists(this._cmakeCacheDir))
       {
-        StopWatching();
+        this.StopWatching();
         return;
       }
-      if (_cacheWatcher == null)
+      if (this._cacheWatcher == null)
       {
-        _cacheWatcher = new FileSystemWatcher(_cmakeCacheDir)
+        this._cacheWatcher = new FileSystemWatcher(this._cmakeCacheDir)
         {
           IncludeSubdirectories = false,
           EnableRaisingEvents = true,
           Filter = _cmakeCacheFile
         };
-        _cacheWatcher.Changed += OnCMakeCacheChanged;
-        _cacheWatcher.Created += OnCMakeCacheChanged;
+        this._cacheWatcher.Changed += this.OnCMakeCacheChanged;
+        this._cacheWatcher.Created += this.OnCMakeCacheChanged;
       }
       else
       {
-        _cacheWatcher.Path = _cmakeCacheDir;
-        _cacheWatcher.Filter = _cmakeCacheFile;
+        this._cacheWatcher.Path = this._cmakeCacheDir;
+        this._cacheWatcher.Filter = this._cmakeCacheFile;
       }
-      ReloadCMakeCache();
+      this.ReloadCMakeCache();
     }
 
     public void StopWatching()
     {
-      if (null == _cacheWatcher)
+      if (null == this._cacheWatcher)
       {
         return;
       }
-      _cacheWatcher.Changed -= OnCMakeCacheChanged;
-      _cacheWatcher.Created -= OnCMakeCacheChanged;
-      _cacheWatcher.Dispose();
-      _cacheWatcher = null;
+      this._cacheWatcher.Changed -= this.OnCMakeCacheChanged;
+      this._cacheWatcher.Created -= this.OnCMakeCacheChanged;
+      this._cacheWatcher.Dispose();
+      this._cacheWatcher = null;
     }
 
     public CMakeCache()
     {
-      _cacheEntries = new Dictionary<string, CMakeCacheEntry>();
+      this._cacheEntries = new Dictionary<string, CMakeCacheEntry>();
     }
 
     private void OnCMakeCacheChanged(object source, FileSystemEventArgs e)
     {
-      ReloadCMakeCache();
+      this.ReloadCMakeCache();
     }
 
     public void ReloadCMakeCache(IFrameworkHandle log = null)
     {
-      var cMakeCacheFileName = Path.Combine(CMakeCacheDir, CMakeCacheFile);
+      var cMakeCacheFileName = Path.Combine(this.CMakeCacheDir, this.CMakeCacheFile);
       var newInfo = new FileInfo(cMakeCacheFileName);
-      if (_cmakeCacheInfo != null)
+      if (this._cmakeCacheInfo != null)
       {
         if (null != log)
         {
           log.SendMessage(TestMessageLevel.Informational,
               "CMakeCache.ReloadCMakeCache: comparing already loaded cache");
         }
-        if (_cmakeCacheInfo.FullName == newInfo.FullName &&
-            _cmakeCacheInfo.LastWriteTime == newInfo.LastWriteTime &&
+        if (this._cmakeCacheInfo.FullName == newInfo.FullName &&
+            this._cmakeCacheInfo.LastWriteTime == newInfo.LastWriteTime &&
             newInfo.Exists)
         {
           if (null != log)
@@ -145,8 +146,8 @@ namespace CTestAdapter
         log.SendMessage(TestMessageLevel.Informational,
             "CMakeCache.ReloadCMakeCache: reloading cmake cache from \"" + cMakeCacheFileName + "\"");
       }
-      _cmakeCacheInfo = newInfo;
-      _cacheEntries.Clear();
+      this._cmakeCacheInfo = newInfo;
+      this._cacheEntries.Clear();
       if (!File.Exists(cMakeCacheFileName))
       {
         if (null != log)
@@ -170,7 +171,7 @@ namespace CTestAdapter
         {
           continue;
         }
-        var c = CacheEntryRegex.Split(line);
+        var c = CMakeCache.CacheEntryRegex.Split(line);
         if (c.Length != 5)
         {
           if (null != log)
@@ -204,15 +205,15 @@ namespace CTestAdapter
           //Type = myType,
           Value = c[3]
         };
-        _cacheEntries.Add(entry.Name, entry);
+        this._cacheEntries.Add(entry.Name, entry);
       }
       r.Close();
       stream.Close();
       r.Dispose();
       stream.Dispose();
-      if (null != CacheChanged)
+      if (null != this.CacheChanged)
       {
-        CacheChanged.Invoke();
+        this.CacheChanged.Invoke();
       }
     }
   }

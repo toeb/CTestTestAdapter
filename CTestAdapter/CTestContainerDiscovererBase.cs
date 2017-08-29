@@ -18,11 +18,11 @@ namespace CTestAdapter
 
     public string ExecutorUriString
     {
-      get { return _executorUriString; }
+      get { return this._executorUriString; }
       set
       {
-        _executorUriString = value;
-        ExecutorUri = new Uri(value);
+        this._executorUriString = value;
+        this.ExecutorUri = new Uri(value);
       }
     }
 
@@ -30,14 +30,14 @@ namespace CTestAdapter
     {
       get
       {
-        if (!_initialContainerSearch)
+        if (!this._initialContainerSearch)
         {
-          return _cachedContainers;
+          return this._cachedContainers;
         }
-        var files = FindTestFiles();
-        UpdateFileWatcher(files, true);
-        _initialContainerSearch = false;
-        return _cachedContainers;
+        var files = this.FindTestFiles();
+        this.UpdateFileWatcher(files, true);
+        this._initialContainerSearch = false;
+        return this._cachedContainers;
       }
     }
 
@@ -61,28 +61,28 @@ namespace CTestAdapter
         string executorUri)
     {
       ValidateArg.NotNull(serviceProvider, "serviceProvider");
-      _log = new CTestLogWindow()
+      this._log = new CTestLogWindow()
       {
         Enabled = true,
         AutoRaise = false
       };
-      ExecutorUriString = executorUri;
-      _initialContainerSearch = true;
-      ServiceProvider = serviceProvider;
-      _cachedContainers = new List<ITestContainer>();
-      _solutionListener = new SolutionEventListener(ServiceProvider);
-      _testFilesUpdateWatcher = new TestFilesWatcher();
+      this.ExecutorUriString = executorUri;
+      this._initialContainerSearch = true;
+      this.ServiceProvider = serviceProvider;
+      this._cachedContainers = new List<ITestContainer>();
+      this._solutionListener = new SolutionEventListener(ServiceProvider);
+      this._testFilesUpdateWatcher = new TestFilesWatcher();
       if (addRemoveListener == null)
       {
         addRemoveListener = new ProjectItemAddRemoveListener(serviceProvider);
       }
-      _testFilesAddRemoveListener = addRemoveListener;
-      _testFilesAddRemoveListener.TestFileChanged += OnTestContainerFileChanged;
-      _testFilesAddRemoveListener.StartListeningForTestFileChanges();
-      _solutionListener.SolutionUnloaded += OnSolutionUnloaded;
-      _solutionListener.SolutionProjectChanged += OnSolutionProjectChanged;
-      _solutionListener.StartListeningForChanges();
-      _testFilesUpdateWatcher.FileChangedEvent += OnTestContainerFileChanged;
+      this._testFilesAddRemoveListener = addRemoveListener;
+      this._testFilesAddRemoveListener.TestFileChanged += this.OnTestContainerFileChanged;
+      this._testFilesAddRemoveListener.StartListeningForTestFileChanges();
+      this._solutionListener.SolutionUnloaded += this.OnSolutionUnloaded;
+      this._solutionListener.SolutionProjectChanged += this.OnSolutionProjectChanged;
+      this._solutionListener.StartListeningForChanges();
+      this._testFilesUpdateWatcher.FileChangedEvent += this.OnTestContainerFileChanged;
     }
 
     #region TestContainerHandling
@@ -90,52 +90,52 @@ namespace CTestAdapter
     private void UpdateFileWatcher(IEnumerable<string> files, bool isAdd)
     {
       var enumerable = files as IList<string> ?? files.ToList();
-      TestContainersAboutToBeUpdated();
+      this.TestContainersAboutToBeUpdated();
       foreach (var file in enumerable)
       {
         if (isAdd)
         {
-          _testFilesUpdateWatcher.AddWatch(file);
-          AddTestContainerIfTestFile(file);
+          this._testFilesUpdateWatcher.AddWatch(file);
+          this.AddTestContainerIfTestFile(file);
         }
         else
         {
-          _testFilesUpdateWatcher.RemoveWatch(file);
-          RemoveTestContainer(file);
+          this._testFilesUpdateWatcher.RemoveWatch(file);
+          this.RemoveTestContainer(file);
         }
       }
     }
 
     private void AddTestContainerIfTestFile(string file)
     {
-      var isTestFile = IsTestContainerFile(file);
-      RemoveTestContainer(file);
+      var isTestFile = this.IsTestContainerFile(file);
+      this.RemoveTestContainer(file);
       if (!isTestFile)
       {
-        _log.OutputLine("CTestContainerDiscovererBase.AddTestContainerIfTestFile: not a test file: " + file);
+        this._log.OutputLine("CTestContainerDiscovererBase.AddTestContainerIfTestFile: not a test file: " + file);
         return;
       }
-      var container = GetNewTestContainer(file);
-      _cachedContainers.Add(container);
+      var container = this.GetNewTestContainer(file);
+      this._cachedContainers.Add(container);
     }
 
     private void RemoveTestContainer(string file)
     {
-      var index = _cachedContainers.FindIndex(x => x.Source.Equals(file, StringComparison.OrdinalIgnoreCase));
+      var index = this._cachedContainers.FindIndex(x => x.Source.Equals(file, StringComparison.OrdinalIgnoreCase));
       if (index >= 0)
       {
-        _log.OutputLine("CTestContainerDiscovererBase.RemoveTestContainer: removing " + file);
-        _cachedContainers.RemoveAt(index);
+        this._log.OutputLine("CTestContainerDiscovererBase.RemoveTestContainer: removing " + file);
+        this._cachedContainers.RemoveAt(index);
       }
     }
 
     protected void ResetTestContainers()
     {
-      _log.OutputLine("CTestContainerDiscovererBase.ResetTestContainers");
-      _initialContainerSearch = true;
-      _log.OutputLine(
+      this._log.OutputLine("CTestContainerDiscovererBase.ResetTestContainers");
+      this._initialContainerSearch = true;
+      this._log.OutputLine(
           "CTestContainerDiscovererBase.ResetTestContainers => CTestContainerDiscovererBase.TestContainersAboutToBeUpdated");
-      TestContainersAboutToBeUpdated();
+      this.TestContainersAboutToBeUpdated();
     }
 
     #endregion
@@ -144,13 +144,13 @@ namespace CTestAdapter
 
     private void OnSolutionUnloaded(object sender, EventArgs eventArgs)
     {
-      _log.OutputLine("CTestContainerDiscovererBase.OnSolutionUnloaded");
-      _initialContainerSearch = true;
+      this._log.OutputLine("CTestContainerDiscovererBase.OnSolutionUnloaded");
+      this._initialContainerSearch = true;
     }
 
     private void OnSolutionProjectChanged(object sender, SolutionEventsListenerEventArgs e)
     {
-      _log.OutputLine(
+      this._log.OutputLine(
           "CTestContainerDiscovererBase.OnSolutionProjectChanged (SHOULD NOT BE CALLED IN CTEST ADAPTER)");
       // this does not apply to ctest tests, as the CTestTestfile.cmake files
       // are not part of the projects.
@@ -158,18 +158,18 @@ namespace CTestAdapter
       {
         return;
       }
-      var files = FindTestFiles(e.Project);
+      var files = this.FindTestFiles(e.Project);
       switch (e.ChangedReason)
       {
         case SolutionChangedReason.Load:
-          _log.OutputLine(
+          this._log.OutputLine(
               "CTestContainerDiscovererBase.OnSolutionProjectChanged => CTestContainerDiscovererBase.UpdateFileWatcher(true)");
-          UpdateFileWatcher(files, true);
+          this.UpdateFileWatcher(files, true);
           break;
         case SolutionChangedReason.Unload:
-          _log.OutputLine(
+          this._log.OutputLine(
               "CTestContainerDiscovererBase.OnSolutionProjectChanged => CTestContainerDiscovererBase.UpdateFileWatcher(false)");
-          UpdateFileWatcher(files, false);
+          this.UpdateFileWatcher(files, false);
           break;
         case SolutionChangedReason.None:
           break;
@@ -183,27 +183,27 @@ namespace CTestAdapter
 
     private void OnTestContainerFileChanged(object sender, TestFileChangedEventArgs e)
     {
-      _log.OutputLine("CTestContainerDiscovererBase.OnTestContainerFileChanged");
+      this._log.OutputLine("CTestContainerDiscovererBase.OnTestContainerFileChanged");
       if (e == null)
       {
         return;
       }
       // Don't do anything for files we are sure can't be test files
-      if (!IsTestContainerFile(e.File))
+      if (!this.IsTestContainerFile(e.File))
       {
         return;
       }
-      _log.OutputLine("OnTestContainerFileChanged => TestContainersAboutToBeUpdated");
-      TestContainersAboutToBeUpdated();
+      this._log.OutputLine("OnTestContainerFileChanged => TestContainersAboutToBeUpdated");
+      this.TestContainersAboutToBeUpdated();
       switch (e.ChangedReason)
       {
         case TestFileChangedReason.Added:
-          _testFilesUpdateWatcher.AddWatch(e.File);
-          AddTestContainerIfTestFile(e.File);
+          this._testFilesUpdateWatcher.AddWatch(e.File);
+          this.AddTestContainerIfTestFile(e.File);
           break;
         case TestFileChangedReason.Removed:
-          _testFilesUpdateWatcher.RemoveWatch(e.File);
-          RemoveTestContainer(e.File);
+          this._testFilesUpdateWatcher.RemoveWatch(e.File);
+          this.RemoveTestContainer(e.File);
           break;
         case TestFileChangedReason.Changed:
           AddTestContainerIfTestFile(e.File);
@@ -213,13 +213,13 @@ namespace CTestAdapter
         default:
           throw new ArgumentOutOfRangeException();
       }
-      if (_initialContainerSearch)
+      if (this._initialContainerSearch)
       {
         return;
       }
-      if (null != TestContainersUpdated)
+      if (null != this.TestContainersUpdated)
       {
-        TestContainersUpdated.Invoke(this, EventArgs.Empty);
+        this.TestContainersUpdated.Invoke(this, EventArgs.Empty);
       }
     }
 
@@ -229,7 +229,7 @@ namespace CTestAdapter
 
     public void Dispose()
     {
-      Dispose(true);
+      this.Dispose(true);
       // Use SupressFinalize in case a subclass
       // of this type implements a finalizer.
       GC.SuppressFinalize(this);
@@ -241,21 +241,21 @@ namespace CTestAdapter
       {
         return;
       }
-      if (_testFilesUpdateWatcher != null)
+      if (this._testFilesUpdateWatcher != null)
       {
-        _testFilesUpdateWatcher.FileChangedEvent -= OnTestContainerFileChanged;
-        ((IDisposable)_testFilesUpdateWatcher).Dispose();
+        this._testFilesUpdateWatcher.FileChangedEvent -= this.OnTestContainerFileChanged;
+        ((IDisposable)this._testFilesUpdateWatcher).Dispose();
       }
-      if (_testFilesAddRemoveListener != null)
+      if (this._testFilesAddRemoveListener != null)
       {
-        _testFilesAddRemoveListener.TestFileChanged -= OnTestContainerFileChanged;
-        _testFilesAddRemoveListener.StopListeningForTestFileChanges();
+        this._testFilesAddRemoveListener.TestFileChanged -= this.OnTestContainerFileChanged;
+        this._testFilesAddRemoveListener.StopListeningForTestFileChanges();
       }
-      if (_solutionListener != null)
+      if (this._solutionListener != null)
       {
-        _solutionListener.SolutionUnloaded -= OnSolutionUnloaded;
-        _solutionListener.SolutionProjectChanged -= OnSolutionProjectChanged;
-        _solutionListener.StopListeningForChanges();
+        this._solutionListener.SolutionUnloaded -= this.OnSolutionUnloaded;
+        this._solutionListener.SolutionProjectChanged -= this.OnSolutionProjectChanged;
+        this._solutionListener.StopListeningForChanges();
       }
     }
 

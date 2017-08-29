@@ -36,9 +36,9 @@ namespace CTestAdapter
 
     public CTestDiscoverer()
     {
-      EnableLogging = true;
-      _testInfo = new CTestInfo();
-      _buildConfig = new BuildConfiguration();
+      this.EnableLogging = true;
+      this._testInfo = new CTestInfo();
+      this._buildConfig = new BuildConfiguration();
     }
 
     public void DiscoverTests(IEnumerable<string> sources,
@@ -46,13 +46,13 @@ namespace CTestAdapter
         IMessageLogger log,
         ITestCaseDiscoverySink discoverySink)
     {
-      var testInfoFilename = Path.Combine(_buildConfig.SolutionDir, CTestInfo.CTestInfoFileName);
+      var testInfoFilename = Path.Combine(this._buildConfig.SolutionDir, CTestInfo.CTestInfoFileName);
       if (!File.Exists(testInfoFilename))
       {
         log.SendMessage(TestMessageLevel.Warning,
             "CTestDiscoverer.DiscoverTests: test discoverer didn't find file:" + testInfoFilename);
       }
-      _testInfo.ReadTestInfoFile(testInfoFilename);
+      this._testInfo.ReadTestInfoFile(testInfoFilename);
       foreach (var source in sources)
       {
         var cases = ParseTestContainerFile(source, log, EnableLogging, _testInfo);
@@ -72,7 +72,7 @@ namespace CTestAdapter
       foreach (var line in content)
       {
         lineNumber++;
-        var matches = AddTestRegex.Matches(line);
+        var matches = CTestDiscoverer.AddTestRegex.Matches(line);
         foreach (var match in matches)
         {
           var m = match as Match;

@@ -36,16 +36,16 @@ namespace CTestAdapter
         )
         : base(serviceProvider, new CTestTestfileAddRemoveListener(), CTestExecutor.ExecutorUriString)
     {
-      _buildConfiguration = new BuildConfiguration(serviceProvider);
-      _cmakeCache = new CMakeCache();
-      _testCollector = new CTestTestCollector();
-      _testInfo = new CTestInfo();
-      _cmakeCache.CMakeCacheDir = _buildConfiguration.SolutionDir;
-      _cmakeCache.CacheChanged += OnCMakeCacheChanged;
-      _cmakeCache.StartWatching();
-      _testCollector.CTestWorkingDir = _cmakeCache.CMakeCacheDir;
-      _testCollector.CTestExecutable = _cmakeCache.CTestExecutable;
-      _log = new CTestLogWindow
+      this._buildConfiguration = new BuildConfiguration(serviceProvider);
+      this._cmakeCache = new CMakeCache();
+      this._testCollector = new CTestTestCollector();
+      this._testInfo = new CTestInfo();
+      this._cmakeCache.CMakeCacheDir = this._buildConfiguration.SolutionDir;
+      this._cmakeCache.CacheChanged += this.OnCMakeCacheChanged;
+      this._cmakeCache.StartWatching();
+      this._testCollector.CTestWorkingDir = this._cmakeCache.CMakeCacheDir;
+      this._testCollector.CTestExecutable = this._cmakeCache.CTestExecutable;
+      this._log = new CTestLogWindow
       {
         Enabled = true,
         AutoRaise = false
@@ -54,28 +54,29 @@ namespace CTestAdapter
 
     private void OnCMakeCacheChanged()
     {
-      _testCollector.CTestExecutable = _cmakeCache.CTestExecutable;
-      _testCollector.CTestWorkingDir = _cmakeCache.CMakeCacheDir;
-      ResetTestContainers();
+      this._testCollector.CTestExecutable = this._cmakeCache.CTestExecutable;
+      this._testCollector.CTestWorkingDir = this._cmakeCache.CMakeCacheDir;
+      this.ResetTestContainers();
     }
 
     private void UpdateListOfValidTests()
     {
-      _testCollector.CurrentActiveConfig = _buildConfiguration.ConfigurationName;
-      _log.OutputLine("CTestContainerDiscoverer.UpdateListOfValidTests");
-      _log.OutputLine("-- working dir:" + _testCollector.CTestWorkingDir);
-      _log.OutputLine("-- ctest:      " + _testCollector.CTestExecutable);
-      _log.OutputLine("-- config:     " + _testCollector.CurrentActiveConfig);
-      _log.OutputLine("-- args:       " + _testCollector.CTestArguments);
-      _testCollector.CollectTestCases(_testInfo);
-      _log.OutputLine("Number of Tests found by ctest -N: " + _testInfo.Tests.Count);
-      _testInfo.WriteTestInfoFile(Path.Combine(_buildConfiguration.SolutionDir, CTestInfo.CTestInfoFileName));
+      this._testCollector.CurrentActiveConfig = this._buildConfiguration.ConfigurationName;
+      this._log.OutputLine("CTestContainerDiscoverer.UpdateListOfValidTests");
+      this._log.OutputLine("-- working dir:" + this._testCollector.CTestWorkingDir);
+      this._log.OutputLine("-- ctest:      " + this._testCollector.CTestExecutable);
+      this._log.OutputLine("-- config:     " + this._testCollector.CurrentActiveConfig);
+      this._log.OutputLine("-- args:       " + this._testCollector.CTestArguments);
+      this._testCollector.CollectTestCases(this._testInfo);
+      this._log.OutputLine("Number of Tests found by ctest -N: " + this._testInfo.Tests.Count);
+      this._testInfo.WriteTestInfoFile(Path.Combine(
+        this._buildConfiguration.SolutionDir, CTestInfo.CTestInfoFileName));
       // TODO only change _validTests if they really changed!!!
       foreach (var test in _testInfo.Tests)
       {
-        _log.OutputLine("valid test: " + test.Number + " := " + test.Name);
+        this._log.OutputLine("valid test: " + test.Number + " := " + test.Name);
       }
-      _log.OutputLine(System.DateTime.Now.ToLongTimeString());
+      this._log.OutputLine(System.DateTime.Now.ToLongTimeString());
     }
 
     #region CTestContainerDiscovererBase
@@ -84,7 +85,7 @@ namespace CTestAdapter
     {
       try
       {
-        return TestFileExtension.Equals(
+        return this.TestFileExtension.Equals(
             Path.GetExtension(file),
             StringComparison.OrdinalIgnoreCase);
       }
@@ -97,7 +98,7 @@ namespace CTestAdapter
 
     private IEnumerable<string> CollectCTestTestfiles(string currentDir)
     {
-      var file = new FileInfo(Path.Combine(currentDir, TestFileName + TestFileExtension));
+      var file = new FileInfo(Path.Combine(currentDir, this.TestFileName + this.TestFileExtension));
       if (!file.Exists)
       {
         return Enumerable.Empty<string>();
@@ -114,14 +115,14 @@ namespace CTestAdapter
       {
         var subpath = dir.Trim('\"');
         subpath = Path.Combine(currentDir, subpath);
-        res.AddRange(CollectCTestTestfiles(subpath));
+        res.AddRange(this.CollectCTestTestfiles(subpath));
       }
       return res;
     }
 
     protected override IEnumerable<string> FindTestFiles()
     {
-      return CollectCTestTestfiles(_cmakeCache.CMakeCacheDir);
+      return this.CollectCTestTestfiles(this._cmakeCache.CMakeCacheDir);
     }
 
     protected override IEnumerable<string> FindTestFiles(IVsProject project)
@@ -139,7 +140,7 @@ namespace CTestAdapter
 
     protected override void TestContainersAboutToBeUpdated()
     {
-      UpdateListOfValidTests();
+      this.UpdateListOfValidTests();
     }
 
     #endregion

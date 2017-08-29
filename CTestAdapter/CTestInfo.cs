@@ -28,13 +28,13 @@ namespace CTestAdapter
 
     public CTestInfo()
     {
-      _fileRead = false;
-      _tests = new List<TestInfo>();
+      this._fileRead = false;
+      this._tests = new List<TestInfo>();
     }
 
     public bool TestExists(string testname)
     {
-      foreach (var v in _tests)
+      foreach (var v in this._tests)
       {
         if (v.Name == testname)
         {
@@ -46,27 +46,27 @@ namespace CTestAdapter
 
     public TestInfo this[int number]
     {
-      get { return _tests.FirstOrDefault(item => item.Number == number); }
+      get { return this._tests.FirstOrDefault(item => item.Number == number); }
     }
 
     public TestInfo this[string name]
     {
-      get { return _tests.FirstOrDefault(item => string.Equals(item.Name, name)); }
+      get { return this._tests.FirstOrDefault(item => string.Equals(item.Name, name)); }
     }
 
     public List<TestInfo> Tests
     {
-      get { return _tests; }
+      get { return this._tests; }
     }
 
     public bool FileRead
     {
-      get { return _fileRead; }
+      get { return this._fileRead; }
     }
 
     public void ReadTestInfoFile(string fileName)
     {
-      _tests.Clear();
+      this._tests.Clear();
       if (!File.Exists(fileName))
       {
         return;
@@ -89,9 +89,9 @@ namespace CTestAdapter
           Name = name,
           Number = number,
         };
-        _tests.Add(info);
+        this._tests.Add(info);
       }
-      _fileRead = true;
+      this._fileRead = true;
       str.Close();
     }
 

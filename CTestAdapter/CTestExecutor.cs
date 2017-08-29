@@ -40,32 +40,32 @@ namespace CTestAdapter
 
     public CTestExecutor()
     {
-      EnableLogging = true;
-      _runningFromSources = false;
-      _buildConfiguration = new BuildConfiguration();
-      _solutionDir = _buildConfiguration.SolutionDir;
-      _cmakeCache = new CMakeCache
+      this.EnableLogging = true;
+      this._runningFromSources = false;
+      this._buildConfiguration = new BuildConfiguration();
+      this._solutionDir = this._buildConfiguration.SolutionDir;
+      this._cmakeCache = new CMakeCache
       {
-        CMakeCacheDir = _solutionDir
+        CMakeCacheDir = this._solutionDir
       };
-      _ctestInfo = new CTestInfo();
+      this._ctestInfo = new CTestInfo();
     }
 
     public void Cancel()
     {
-      _cancelled = true;
+      this._cancelled = true;
     }
 
     private void TryUpdateCacheDir(string source, IMessageLogger log)
     {
-      if (_cmakeCache.CMakeCacheDir.Length != 0)
+      if (this._cmakeCache.CMakeCacheDir.Length != 0)
       {
         return;
       }
       var info = new FileInfo(source);
       if (info.Exists)
       {
-        _cmakeCache.CMakeCacheDir =
+        this._cmakeCache.CMakeCacheDir =
             FindRootOfCTestTestfile(info.DirectoryName, log);
       }
     }
@@ -77,7 +77,7 @@ namespace CTestAdapter
         var info = new DirectoryInfo(directory);
         if (File.Exists(info.FullName + "\\" + _cmakeCache.CMakeCacheFile))
         {
-          _solutionDir = info.FullName;
+          this._solutionDir = info.FullName;
           return info.FullName;
         }
         if (!info.Exists)
@@ -96,7 +96,7 @@ namespace CTestAdapter
     {
       var enumerable = sources as IList<string> ?? sources.ToList();
       TryUpdateCacheDir(enumerable.First(), frameworkHandle);
-      _runningFromSources = true;
+      this._runningFromSources = true;
       frameworkHandle.SendMessage(TestMessageLevel.Informational,
           "CTestExecutor.RunTests(src)");
       frameworkHandle.SendMessage(TestMessageLevel.Informational,
@@ -112,13 +112,13 @@ namespace CTestAdapter
             "CTestExecutor.RunTests: didn't find info file:" + testInfoFilename + "");
         */
       }
-      _ctestInfo.ReadTestInfoFile(testInfoFilename);
+      this._ctestInfo.ReadTestInfoFile(testInfoFilename);
       foreach (var s in enumerable)
       {
         var cases = CTestDiscoverer.ParseTestContainerFile(s, frameworkHandle, EnableLogging, _ctestInfo);
-        RunTests(cases.Values, runContext, frameworkHandle);
+        this.RunTests(cases.Values, runContext, frameworkHandle);
       }
-      _runningFromSources = false;
+      this._runningFromSources = false;
     }
 
     public void RunTests(IEnumerable<TestCase> tests, IRunContext runContext, IFrameworkHandle frameworkHandle)
@@ -128,8 +128,8 @@ namespace CTestAdapter
       {
         return;
       }
-      TryUpdateCacheDir(testCases.First().Source, frameworkHandle);
-      var buildConfiguration = _buildConfiguration.ConfigurationName;
+      this.TryUpdateCacheDir(testCases.First().Source, frameworkHandle);
+      var buildConfiguration = this._buildConfiguration.ConfigurationName;
       if (!buildConfiguration.Any())
       {
         // get configuration name from cmake cache, pick first found
@@ -164,23 +164,23 @@ namespace CTestAdapter
             "CTestExecutor.RunTests: working directory not found: \"" + _cmakeCache.CMakeCacheDir + "\"");
         return;
       }
-      if (EnableLogging)
+      if (this.EnableLogging)
       {
         frameworkHandle.SendMessage(TestMessageLevel.Informational,
             "CTestExecutor.RunTests: working directory is \"" + _cmakeCache.CMakeCacheDir + "\"");
       }
-      var logFileDir = _cmakeCache.CMakeCacheDir + "\\Testing\\Temporary";
-      if (!_runningFromSources)
+      var logFileDir = this._cmakeCache.CMakeCacheDir + "\\Testing\\Temporary";
+      if (!this._runningFromSources)
       {
         frameworkHandle.SendMessage(TestMessageLevel.Informational,
-            "CTestExecutor.RunTests: ctest (" + _cmakeCache.CTestExecutable + ")");
+            "CTestExecutor.RunTests: ctest (" + this._cmakeCache.CTestExecutable + ")");
         frameworkHandle.SendMessage(TestMessageLevel.Informational,
             "CTestExecutor.RunTests: logs are written to (file://" + logFileDir + ")");
       }
       // run test cases
       foreach (var test in testCases)
       {
-        if (_cancelled)
+        if (this._cancelled)
         {
           break;
         }
@@ -193,7 +193,7 @@ namespace CTestAdapter
         var startInfo = new ProcessStartInfo
         {
           Arguments = args,
-          FileName = _cmakeCache.CTestExecutable,
+          FileName = this._cmakeCache.CTestExecutable,
           WorkingDirectory = _cmakeCache.CMakeCacheDir,
           CreateNoWindow = true,
           RedirectStandardOutput = true,
