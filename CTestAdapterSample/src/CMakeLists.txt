@@ -12,3 +12,7 @@ add_test(main main)
 
 add_test(NAME "special:main"
   COMMAND main)
+
+add_executable(main_fail main_fail.cpp)
+
+add_test(main_fail main_fail)

@@ -19,8 +19,6 @@ set(ADAPTER_SOURCES
   CTestLogWindow.cs
   CTestTestCollector.cs
   DTEHelper.cs
-  ProcessExtensions.cs
-  Events/ChildProcessWatcher.cs
   Events/CTestTestfileAddRemoveListener.cs
   Events/ISolutionEventsListener.cs
   Events/ITestFileAddRemoveListener.cs
