@@ -19,11 +19,12 @@ namespace CTestAdapter
     private const string RegexFieldDuration = "duration";
 
     private static readonly Regex RegexOutput =
-        new Regex(@"Output:\r\n-+\r\n(?<" + RegexFieldOutput + @">.*)\r\n<end of output>\r\n",
+        new Regex(@"Output:\r\n-+\r\n(?<" + CTestExecutor.RegexFieldOutput + @">.*)\r\n<end of output>\r\n",
             RegexOptions.Singleline);
 
     private static readonly Regex RegexDuration =
-        new Regex(@"<end of output>\r\nTest time =\s+(?<" + RegexFieldDuration + @">[\d\.]+) sec\r\n",
+        new Regex(@"<end of output>\r\nTest time =\s+(?<" + CTestExecutor.RegexFieldDuration + 
+          @">[\d\.]+) sec\r\n",
             RegexOptions.Singleline);
 
     public static readonly Uri ExecutorUri = new Uri(ExecutorUriString);
@@ -242,12 +243,12 @@ namespace CTestAdapter
         }
         logFileBackup = logFileDir + "\\" + logFileBackup;
         File.Copy(logFileName, logFileBackup, true);
-        var matchesDuration = RegexDuration.Match(content);
+        var matchesDuration = CTestExecutor.RegexDuration.Match(content);
         var timeSpan = new TimeSpan();
         if (matchesDuration.Success)
         {
           timeSpan = TimeSpan.FromSeconds(
-              double.Parse(matchesDuration.Groups[RegexFieldDuration].Value,
+              double.Parse(matchesDuration.Groups[CTestExecutor.RegexFieldDuration].Value,
                   System.Globalization.CultureInfo.InvariantCulture.NumberFormat));
         }
         else
@@ -263,8 +264,8 @@ namespace CTestAdapter
         };
         if (process.ExitCode != 0)
         {
-          var matchesOutput = RegexOutput.Match(content);
-          testResult.ErrorMessage = matchesOutput.Groups[RegexFieldOutput].Value;
+          var matchesOutput = CTestExecutor.RegexOutput.Match(content);
+          testResult.ErrorMessage = matchesOutput.Groups[CTestExecutor.RegexFieldOutput].Value;
           frameworkHandle.SendMessage(TestMessageLevel.Error,
               "CTestExecutor.RunTests: ERROR IN TEST " + test.FullyQualifiedName + ":");
           frameworkHandle.SendMessage(TestMessageLevel.Error, output);
