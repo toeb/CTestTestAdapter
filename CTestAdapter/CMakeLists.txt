@@ -188,6 +188,7 @@ set_target_properties(CTestAdapter
   #VS_GLOBAL_PublishUrl "publish\\\\"
   #VS_GLOBAL_CopyVsixExtensionLocation "..\\dist"
   #VS_GLOBAL_CopyVsixExtensionFiles "True"
+  VS_DOTNET_REFERENCEPROP_ZERO_CHECK_TAG_Private "False"
   ${CTEST_ADAPTER_HINT_REFERENCES}
   )
 
